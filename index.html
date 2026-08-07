@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#050505">
+  <title>ZeZo Core — Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --black: #050505;
+      --panel: #0a0a0a;
+      --panel-2: #101010;
+      --white: #f5f5f5;
+      --gray: #888;
+      --dark-gray: #4d4d4d;
+      --line: rgba(255,255,255,.13);
+      --soft-line: rgba(255,255,255,.07);
+      --ease: cubic-bezier(.16,1,.3,1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: var(--black);
+      color: var(--white);
+      font-family: "Space Grotesk", Arial, sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      opacity: .06;
+      background-image:
+        linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
+      background-size: 70px 70px;
+      mask-image: linear-gradient(to bottom, #000, transparent 90%);
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+      opacity: .025;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 3px,
+        #fff 4px
+      );
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      z-index: 19;
+      pointer-events: none;
+      opacity: .02;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+    }
+
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      width: 245px;
+      padding: 28px 18px;
+      border-right: 1px solid var(--line);
+      background: rgba(5,5,5,.86);
+      backdrop-filter: blur(18px);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 12px;
+      margin-bottom: 70px;
+    }
+
+    .logo-mark {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid #fff;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .logo-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+    }
+
+    .logo-beta {
+      display: block;
+      margin-top: 4px;
+      color: var(--gray);
+      font-size: 8px;
+      font-weight: 400;
+      letter-spacing: .17em;
+    }
+
+    .nav-label {
+      padding: 0 13px;
+      margin-bottom: 13px;
+      color: #555;
+      font-size: 9px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .nav-button {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      width: 100%;
+      padding: 13px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #777;
+      cursor: pointer;
+      font-size: 10px;
+      letter-spacing: .13em;
+      text-align: left;
+      text-transform: uppercase;
+      transition: .35s var(--ease);
+    }
+
+    .nav-button:hover,
+    .nav-button.active {
+      border-color: var(--line);
+      background: rgba(255,255,255,.07);
+      color: #fff;
+    }
+
+    .nav-button.active::before {
+      content: "";
+      position: absolute;
+      left: -1px;
+      width: 2px;
+      height: 20px;
+      background: #fff;
+      box-shadow: 0 0 15px #fff;
+    }
+
+    .nav-icon {
+      display: grid;
+      place-items: center;
+      width: 17px;
+      height: 17px;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      font-size: 8px;
+    }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      padding: 15px 13px;
+      border: 1px solid var(--soft-line);
+    }
+
+    .connection {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #888;
+      font-size: 8px;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .connection-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 12px #fff;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: .35;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    /* Main */
+    .main {
+      width: calc(100% - 245px);
+      min-height: 100vh;
+      margin-left: 245px;
+      padding: 32px clamp(25px, 5vw, 75px) 50px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .breadcrumb {
+      color: #777;
+      font-size: 9px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    .breadcrumb span {
+      color: #fff;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 25px;
+    }
+
+    .time {
+      color: #777;
+      font-size: 10px;
+      letter-spacing: .14em;
+    }
+
+    .profile-button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 0;
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .avatar {
+      display: grid;
+      place-items: center;
+      width: 31px;
+      height: 31px;
+      border: 1px solid #fff;
+      border-radius: 50%;
+      font-size: 10px;
+    }
+
+    .profile-name {
+      color: #aaa;
+      font-size: 9px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    /* Dashboard heading */
+    .heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 30px;
+      padding: 72px 0 50px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      color: #777;
+      font-size: 9px;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 27px;
+      height: 1px;
+      background: #fff;
+    }
+
+    h1 {
+      max-width: 650px;
+      font-size: clamp(42px, 6vw, 84px);
+      font-weight: 600;
+      letter-spacing: -.08em;
+      line-height: .9;
+    }
+
+    .outline {
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255,255,255,.7);
+    }
+
+    .heading-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 15px;
+      border: 1px solid var(--line);
+      color: #aaa;
+      font-size: 9px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .heading-status::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 13px #fff;
+    }
+
+    /* Cards */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.07), transparent 38%),
+        var(--panel);
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -30px;
+      bottom: -30px;
+      width: 100px;
+      height: 100px;
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 50%;
+    }
+
+    .stat-card {
+      min-height: 155px;
+      padding: 22px;
+    }
+
+    .card-label {
+      color: #777;
+      font-size: 9px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      margin-top: 27px;
+      font-size: 25px;
+      font-weight: 600;
+      letter-spacing: -.04em;
+    }
+
+    .stat-sub {
+      margin-top: 8px;
+      color: #777;
+      font-size: 10px;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 14px;
+    }
+
+    .welcome-card {
+      min-height: 285px;
+      padding: 30px;
+    }
+
+    .welcome-card h2 {
+      max-width: 480px;
+      margin-top: 28px;
+      font-size: clamp(26px, 3vw, 45px);
+      font-weight: 500;
+      letter-spacing: -.06em;
+      line-height: 1;
+    }
+
+    .welcome-card p {
+      max-width: 500px;
+      margin-top: 18px;
+      color: #888;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .system-code {
+      position: absolute;
+      right: 28px;
+      bottom: 25px;
+      color: #444;
+      font-size: 9px;
+      letter-spacing: .15em;
+      line-height: 1.8;
+      text-align: right;
+    }
+
+    .activity-card {
+      min-height: 285px;
+      padding: 25px;
+    }
+
+    .card-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--soft-line);
+    }
+
+    .card-title {
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .card-link {
+      border: 0;
+      background: transparent;
+      color: #777;
+      cursor: pointer;
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .card-link:hover {
+      color: #fff;
+    }
+
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding-top: 22px;
+    }
+
+    .activity-item {
+      display: grid;
+      grid-template-columns: 52px 12px 1fr;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .activity-time {
+      color: #555;
+      font-size: 9px;
+    }
+
+    .activity-mark {
+      position: relative;
+      width: 7px;
+      height: 7px;
+      border: 1px solid #fff;
+      border-radius: 50%;
+    }
+
+    .activity-mark::after {
+      content: "";
+      position: absolute;
+      top: 9px;
+      left: 2px;
+      width: 1px;
+      height: 26px;
+      background: var(--line);
+    }
+
+    .activity-item:last-child .activity-mark::after {
+      display: none;
+    }
+
+    .activity-text {
+      color: #aaa;
+      font-size: 10px;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .tools-card,
+    .session-card {
+      min-height: 225px;
+      padding: 25px;
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .tool-button {
+      padding: 18px 12px;
+      border: 1px solid var(--soft-line);
+      background: transparent;
+      color: #999;
+      cursor: pointer;
+      font-size: 9px;
+      letter-spacing: .12em;
+      text-align: left;
+      text-transform: uppercase;
+      transition: .35s var(--ease);
+    }
+
+    .tool-button:hover {
+      border-color: #fff;
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      transform: translateY(-3px);
+    }
+
+    .session-info {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .session-row {
+      display: flex;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--soft-line);
+      font-size: 10px;
+    }
+
+    .session-row span:first-child {
+      color: #666;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .session-row span:last-child {
+      color: #ddd;
+    }
+
+    .logout-button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 9px;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+      transition: .35s ease;
+    }
+
+    .logout-button:hover {
+      border-color: #fff;
+      background: #fff;
+      color: #000;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 35px;
+      color: #444;
+      font-size: 8px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      right: 25px;
+      bottom: 25px;
+      z-index: 100;
+      max-width: 290px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      background: #0b0b0b;
+      color: #ccc;
+      font-size: 10px;
+      letter-spacing: .08em;
+      line-height: 1.5;
+      opacity: 0;
+      transform: translateY(20px);
+      pointer-events: none;
+      transition: .5s var(--ease);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsive */
+    @media (max-width: 950px) {
+      .sidebar {
+        width: 205px;
+      }
+
+      .main {
+        width: calc(100% - 205px);
+        margin-left: 205px;
+      }
+
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      body {
+        overflow-x: hidden;
+      }
+
+      .app {
+        display: block;
+      }
+
+      .sidebar {
+        position: fixed;
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 70px;
+        padding: 8px 12px;
+        border-top: 1px solid var(--line);
+        border-right: 0;
+        background: rgba(5,5,5,.92);
+      }
+
+      .logo,
+      .nav-label,
+      .sidebar-bottom {
+        display: none;
+      }
+
+      .nav {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 3px;
+        height: 100%;
+      }
+
+      .nav-button {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 5px;
+        padding: 4px;
+        font-size: 7px;
+        letter-spacing: .06em;
+        text-align: center;
+      }
+
+      .nav-button.active::before {
+        top: -8px;
+        left: 50%;
+        width: 25px;
+        height: 2px;
+        transform: translateX(-50%);
+      }
+
+      .nav-icon {
+        width: 17px;
+        height: 17px;
+      }
+
+      .main {
+        width: 100%;
+        margin-left: 0;
+        padding: 20px 17px 100px;
+      }
+
+      .topbar {
+        padding-bottom: 18px;
+      }
+
+      .time {
+        display: none;
+      }
+
+      .profile-name {
+        display: none;
+      }
+
+      .heading {
+        display: block;
+        padding: 55px 0 35px;
+      }
+
+      h1 {
+        font-size: clamp(46px, 14vw, 76px);
+      }
+
+      .heading-status {
+        display: inline-flex;
+        margin-top: 28px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .stat-card {
+        min-height: 125px;
+      }
+
+      .stat-value {
+        margin-top: 20px;
+      }
+
+      .main-grid,
+      .bottom-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .welcome-card,
+      .activity-card,
+      .tools-card,
+      .session-card {
+        min-height: auto;
+      }
+
+      .welcome-card {
+        padding: 23px;
+      }
+
+      .welcome-card h2 {
+        font-size: 32px;
+      }
+
+      .system-code {
+        position: static;
+        margin-top: 28px;
+        text-align: left;
+      }
+
+      .tools {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .footer {
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="noise"></div>
+
+  <div class="app">
+
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-mark">Z</div>
+
+        <div>
+          <div class="logo-name">ZeZo</div>
+          <span class="logo-beta">CORE DASHBOARD / BETA</span>
+        </div>
+      </div>
+
+      <div class="nav-label">Navigation</div>
+
+      <nav class="nav">
+        <button class="nav-button active" type="button" data-message="Overview selected">
+          <span class="nav-icon">O</span>
+          <span>Overview</span>
+        </button>
+
+        <button class="nav-button" type="button" data-message="ZeZo Tools are currently in beta preview">
+          <span class="nav-icon">T</span>
+          <span>ZeZo Tools</span>
+        </button>
+
+        <button class="nav-button" type="button" data-message="Activity log selected">
+          <span class="nav-icon">A</span>
+          <span>Activity Log</span>
+        </button>
+
+        <button class="nav-button" type="button" data-message="Account settings selected">
+          <span class="nav-icon">U</span>
+          <span>Account</span>
+        </button>
+
+        <button class="nav-button" type="button" data-message="System settings selected">
+          <span class="nav-icon">S</span>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="connection">
+          <span class="connection-dot"></span>
+          <span>System online</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <header class="topbar">
+        <div class="breadcrumb">
+          ZeZo Core / <span>Overview</span>
+        </div>
+
+        <div class="top-actions">
+          <div class="time" id="clock">00:00:00 WIB</div>
+
+          <button class="profile-button" type="button">
+            <span class="avatar">X</span>
+            <span class="profile-name">Xylon</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="heading">
+        <div>
+          <div class="eyebrow">Private environment / Beta access</div>
+
+          <h1>
+            Welcome Back,<br>
+            <span class="outline">Xylon.</span>
+          </h1>
+        </div>
+
+        <div class="heading-status">
+          SYSTEM ONLINE
+        </div>
+      </section>
+
+      <section class="stats">
+        <article class="card stat-card">
+          <div class="card-label">System status</div>
+          <div class="stat-value">ONLINE</div>
+          <div class="stat-sub">All systems operational</div>
+        </article>
+
+        <article class="card stat-card">
+          <div class="card-label">Access level</div>
+          <div class="stat-value">BETA USER</div>
+          <div class="stat-sub">Limited access enabled</div>
+        </article>
+
+        <article class="card stat-card">
+          <div class="card-label">Session</div>
+          <div class="stat-value">ACTIVE</div>
+          <div class="stat-sub">Secure session verified</div>
+        </article>
+      </section>
+
+      <section class="main-grid">
+        <article class="card welcome-card">
+          <div class="card-label">ZeZo Core / Environment</div>
+
+          <h2>
+            Your system<br>
+            is <span class="outline">ready.</span>
+          </h2>
+
+          <p>
+            This is the main control center of ZeZo App.
+            Some features are still being prepared for the full release.
+          </p>
+
+          <div class="system-code">
+            SYSTEM: ZEZO_CORE<br>
+            BUILD: BETA_001<br>
+            ACCESS: VERIFIED
+          </div>
+        </article>
+
+        <article class="card activity-card">
+          <div class="card-heading">
+            <div class="card-title">Recent activity</div>
+            <button class="card-link" id="viewActivity" type="button">
+              View all
+            </button>
+          </div>
+
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="activity-time">17:03</div>
+              <div class="activity-mark"></div>
+              <div class="activity-text">Access key verified</div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-time">17:02</div>
+              <div class="activity-mark"></div>
+              <div class="activity-text">Secure session created</div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-time">17:01</div>
+              <div class="activity-mark"></div>
+              <div class="activity-text">ZeZo system initialized</div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-time">17:00</div>
+              <div class="activity-mark"></div>
+              <div class="activity-text">Beta environment loaded</div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="bottom-grid">
+        <article class="card tools-card">
+          <div class="card-heading">
+            <div class="card-title">Quick actions</div>
+            <div class="card-label">Beta</div>
+          </div>
+
+          <div class="tools">
+            <button class="tool-button" type="button" data-message="ZeZo Tools will be available in the next beta update">
+              Open ZeZo Tools
+            </button>
+
+            <button class="tool-button" type="button" data-message="Database module is currently locked">
+              Database
+            </button>
+
+            <button class="tool-button" type="button" data-message="System information loaded">
+              System Info
+            </button>
+
+            <button class="tool-button" type="button" data-message="Settings module opened">
+              Settings
+            </button>
+          </div>
+        </article>
+
+        <article class="card session-card">
+          <div class="card-heading">
+            <div class="card-title">Session details</div>
+            <div class="card-label">Secure</div>
+          </div>
+
+          <div class="session-info">
+            <div class="session-row">
+              <span>User</span>
+              <span>Xylon</span>
+            </div>
+
+            <div class="session-row">
+              <span>Access type</span>
+              <span>Beta access</span>
+            </div>
+
+            <div class="session-row">
+              <span>Device</span>
+              <span id="deviceType">Detecting...</span>
+            </div>
+          </div>
+
+          <button class="logout-button" id="logoutButton" type="button">
+            End session
+          </button>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <span>ZeZo Core Dashboard</span>
+        <span>Beta build / Xylon system</span>
+      </footer>
+
+    </main>
+  </div>
+
+  <div class="toast" id="toast">
+    System message
+  </div>
+
+  <script>
+    const clock = document.getElementById("clock");
+    const deviceType = document.getElementById("deviceType");
+    const toast = document.getElementById("toast");
+    const logoutButton = document.getElementById("logoutButton");
+    const viewActivity = document.getElementById("viewActivity");
+
+    function updateClock() {
+      const now = new Date();
+
+      const time = now.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+        timeZone: "Asia/Jakarta"
+      });
+
+      clock.textContent = `${time} WIB`;
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    const isMobile = window.matchMedia("(max-width: 700px)").matches;
+    deviceType.textContent = isMobile ? "Mobile device" : "Desktop device";
+
+    let toastTimer;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+
+      clearTimeout(toastTimer);
+
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2600);
+    }
+
+    document.querySelectorAll("[data-message]").forEach((element) => {
+      element.addEventListener("click", () => {
+        showToast(element.dataset.message);
+      });
+    });
+
+    document.querySelectorAll(".nav-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".nav-button").forEach((item) => {
+          item.classList.remove("active");
+        });
+
+        button.classList.add("active");
+        showToast(button.dataset.message);
+      });
+    });
+
+    viewActivity.addEventListener("click", () => {
+      showToast("All activity logs are displayed on the dashboard");
+    });
+
+    logoutButton.addEventListener("click", () => {
+      showToast("Session ended — login page will be connected later");
+    });
+  </script>
+</body>
+</html>
