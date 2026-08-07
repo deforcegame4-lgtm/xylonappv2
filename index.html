@@ -14,10 +14,10 @@
     :root {
       --black: #050505;
       --panel: #0a0a0a;
-      --panel-light: #111;
+      --panel-2: #101010;
       --white: #f5f5f5;
       --gray: #888;
-      --dark-gray: #4e4e4e;
+      --muted: #555;
       --line: rgba(255,255,255,.14);
       --soft-line: rgba(255,255,255,.07);
       --ease: cubic-bezier(.16,1,.3,1);
@@ -27,10 +27,6 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-    }
-
-    html {
-      scroll-behavior: smooth;
     }
 
     body {
@@ -49,8 +45,8 @@
       pointer-events: none;
       opacity: .06;
       background-image:
-        linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
+        linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px);
       background-size: 70px 70px;
       mask-image: linear-gradient(to bottom, #000, transparent 90%);
     }
@@ -61,7 +57,7 @@
       inset: 0;
       z-index: 20;
       pointer-events: none;
-      opacity: .025;
+      opacity: .03;
       background: repeating-linear-gradient(
         to bottom,
         transparent 0,
@@ -79,7 +75,7 @@
       inset: 0;
       z-index: 19;
       pointer-events: none;
-      opacity: .02;
+      opacity: .025;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
     }
 
@@ -98,7 +94,7 @@
       width: 245px;
       padding: 28px 18px;
       border-right: 1px solid var(--line);
-      background: rgba(5,5,5,.88);
+      background: rgba(5,5,5,.9);
       backdrop-filter: blur(18px);
     }
 
@@ -133,13 +129,13 @@
       margin-top: 4px;
       color: var(--gray);
       font-size: 8px;
-      letter-spacing: .17em;
+      letter-spacing: .16em;
     }
 
     .nav-label {
       padding: 0 13px;
       margin-bottom: 13px;
-      color: #555;
+      color: var(--muted);
       font-size: 9px;
       letter-spacing: .2em;
       text-transform: uppercase;
@@ -222,7 +218,7 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: .35; }
+      0%,100% { opacity: .35; }
       50% { opacity: 1; }
     }
 
@@ -265,14 +261,13 @@
       letter-spacing: .14em;
     }
 
-    .profile-button {
+    .profile {
       display: flex;
       align-items: center;
       gap: 10px;
       border: 0;
       background: transparent;
       color: #fff;
-      cursor: pointer;
     }
 
     .avatar {
@@ -292,25 +287,25 @@
       text-transform: uppercase;
     }
 
-    /* TRANSITION AREA */
+    /* AREA TRANSISI */
     .page-wrapper {
       position: relative;
-      min-height: 740px;
+      min-height: 760px;
       overflow: hidden;
     }
 
     .page {
       position: absolute;
       inset: 0;
-      padding-top: 55px;
+      padding-top: 58px;
       opacity: 0;
       transform: translateX(45px) scale(.985);
       filter: blur(5px);
       pointer-events: none;
       transition:
-        opacity .55s var(--ease),
+        opacity .5s var(--ease),
         transform .7s var(--ease),
-        filter .55s var(--ease);
+        filter .5s var(--ease);
     }
 
     .page.active {
@@ -359,6 +354,11 @@
       font-weight: 600;
       letter-spacing: -.08em;
       line-height: .9;
+    }
+
+    h2 {
+      font-weight: 500;
+      letter-spacing: -.06em;
     }
 
     .outline {
@@ -413,6 +413,7 @@
       height: 100px;
       border: 1px solid rgba(255,255,255,.07);
       border-radius: 50%;
+      pointer-events: none;
     }
 
     .stat-card {
@@ -446,11 +447,19 @@
       gap: 14px;
     }
 
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
     .welcome-card,
     .activity-card,
     .tools-card,
     .session-card,
-    .settings-card {
+    .settings-card,
+    .account-panel {
       padding: 25px;
     }
 
@@ -463,8 +472,6 @@
       max-width: 480px;
       margin-top: 28px;
       font-size: clamp(26px,3vw,45px);
-      font-weight: 500;
-      letter-spacing: -.06em;
       line-height: 1;
     }
 
@@ -561,28 +568,22 @@
       font-size: 10px;
     }
 
-    .bottom-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-top: 14px;
-    }
-
-    .tools-card,
-    .session-card,
-    .settings-card {
-      min-height: 225px;
-    }
-
-    .tools {
+    .tools,
+    .feature-grid {
       display: grid;
       grid-template-columns: repeat(2,1fr);
       gap: 10px;
       margin-top: 22px;
     }
 
-    .tool-button {
-      padding: 18px 12px;
+    .feature-grid {
+      grid-template-columns: repeat(3,1fr);
+      margin-top: 0;
+    }
+
+    .tool-button,
+    .action-button {
+      padding: 17px 12px;
       border: 1px solid var(--soft-line);
       background: transparent;
       color: #999;
@@ -594,7 +595,8 @@
       transition: .35s var(--ease);
     }
 
-    .tool-button:hover {
+    .tool-button:hover,
+    .action-button:hover {
       border-color: #fff;
       background: rgba(255,255,255,.08);
       color: #fff;
@@ -608,26 +610,24 @@
       margin-top: 22px;
     }
 
-    .session-row {
+    .session-row,
+    .profile-row {
       display: flex;
       justify-content: space-between;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--soft-line);
+      color: #aaa;
       font-size: 10px;
     }
 
-    .session-row span:first-child {
+    .session-row span:first-child,
+    .profile-row span:first-child {
       color: #666;
       letter-spacing: .12em;
       text-transform: uppercase;
     }
 
-    .session-row span:last-child {
-      color: #ddd;
-    }
-
-    .logout-button,
-    .action-button {
+    .logout-button {
       width: 100%;
       margin-top: 22px;
       padding: 13px;
@@ -641,32 +641,15 @@
       transition: .35s ease;
     }
 
-    .logout-button:hover,
-    .action-button:hover {
+    .logout-button:hover {
       border-color: #fff;
       background: #fff;
       color: #000;
     }
 
-    .footer {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 35px;
-      color: #444;
-      font-size: 8px;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-    }
-
-    /* Tools / activity / account / settings */
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(3,1fr);
-      gap: 14px;
-    }
-
+    /* Page tools */
     .feature-card {
-      min-height: 190px;
+      min-height: 230px;
       padding: 25px;
     }
 
@@ -677,10 +660,8 @@
     }
 
     .feature-card h2 {
-      margin-top: 45px;
-      font-size: 22px;
-      font-weight: 500;
-      letter-spacing: -.05em;
+      margin-top: 42px;
+      font-size: 23px;
     }
 
     .feature-card p {
@@ -690,6 +671,12 @@
       line-height: 1.5;
     }
 
+    .feature-card .action-button {
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    /* Activity page */
     .log-table {
       border: 1px solid var(--line);
       background: var(--panel);
@@ -713,10 +700,10 @@
       color: #555;
     }
 
+    /* Account */
     .account-panel,
     .settings-panel {
-      max-width: 700px;
-      padding: 30px;
+      max-width: 720px;
       border: 1px solid var(--line);
       background: var(--panel);
     }
@@ -741,8 +728,6 @@
 
     .account-header h2 {
       font-size: 28px;
-      font-weight: 500;
-      letter-spacing: -.06em;
     }
 
     .account-header p {
@@ -760,18 +745,9 @@
       margin-top: 28px;
     }
 
-    .profile-row {
-      display: flex;
-      justify-content: space-between;
-      padding-bottom: 14px;
-      border-bottom: 1px solid var(--soft-line);
-      color: #aaa;
-      font-size: 11px;
-    }
-
-    .profile-row span:first-child {
-      color: #666;
-      text-transform: uppercase;
+    /* Settings */
+    .settings-panel {
+      padding: 25px;
     }
 
     .setting-row {
@@ -824,7 +800,16 @@
       background: #fff;
     }
 
-    /* Toast */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 35px;
+      color: #444;
+      font-size: 8px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
     .toast {
       position: fixed;
       right: 25px;
@@ -849,7 +834,7 @@
       transform: translateY(0);
     }
 
-    /* Mobile */
+    /* RESPONSIVE */
     @media (max-width: 950px) {
       .sidebar {
         width: 205px;
@@ -952,12 +937,9 @@
         gap: 10px;
       }
 
-      .stat-card {
-        min-height: 125px;
-      }
-
       .main-grid,
-      .bottom-grid {
+      .bottom-grid,
+      .feature-grid {
         grid-template-columns: 1fr;
         gap: 10px;
       }
@@ -966,7 +948,7 @@
       .activity-card,
       .tools-card,
       .session-card,
-      .settings-card {
+      .feature-card {
         min-height: auto;
       }
 
@@ -985,7 +967,7 @@
       }
 
       .log-row {
-        grid-template-columns: 65px 95px 1fr;
+        grid-template-columns: 65px 82px 1fr;
         gap: 8px;
         padding: 15px 12px;
         font-size: 8px;
@@ -1063,12 +1045,14 @@
         </div>
 
         <div class="top-actions">
-          <div class="time" id="clock">00:00:00 WIB</div>
+          <div class="time" id="clock">
+            00:00:00 WIB
+          </div>
 
-          <button class="profile-button">
+          <div class="profile">
             <span class="avatar">X</span>
             <span class="profile-name">Xylon</span>
-          </button>
+          </div>
         </div>
       </header>
 
@@ -1078,7 +1062,9 @@
         <section class="page active" data-content="overview">
           <div class="heading">
             <div>
-              <div class="eyebrow">Private environment / Beta access</div>
+              <div class="eyebrow">
+                Private environment / Beta access
+              </div>
 
               <h1>
                 Welcome Back,<br>
@@ -1113,7 +1099,9 @@
 
           <div class="main-grid">
             <article class="card welcome-card">
-              <div class="card-label">ZeZo Core / Environment</div>
+              <div class="card-label">
+                ZeZo Core / Environment
+              </div>
 
               <h2>
                 Your system<br>
@@ -1135,7 +1123,11 @@
             <article class="card activity-card">
               <div class="card-heading">
                 <div class="card-title">Recent activity</div>
-                <button class="card-link" data-action="activity">
+
+                <button
+                  class="card-link"
+                  data-open-page="activity"
+                >
                   View all
                 </button>
               </div>
@@ -1176,19 +1168,31 @@
               </div>
 
               <div class="tools">
-                <button class="tool-button" data-message="ZeZo Tools masih dalam tahap beta">
+                <button
+                  class="tool-button"
+                  data-message="ZeZo Tools masih dalam tahap beta"
+                >
                   Open ZeZo Tools
                 </button>
 
-                <button class="tool-button" data-message="Database module masih dikunci">
+                <button
+                  class="tool-button"
+                  data-message="Database module masih dikunci"
+                >
                   Database
                 </button>
 
-                <button class="tool-button" data-message="System information loaded">
+                <button
+                  class="tool-button"
+                  data-message="System information loaded"
+                >
                   System Info
                 </button>
 
-                <button class="tool-button" data-message="Settings module opened">
+                <button
+                  class="tool-button"
+                  data-message="Settings module opened"
+                >
                   Settings
                 </button>
               </div>
@@ -1224,7 +1228,9 @@
         <section class="page" data-content="tools">
           <div class="heading">
             <div>
-              <div class="eyebrow">Modules / Beta preview</div>
+              <div class="eyebrow">
+                Modules / Beta preview
+              </div>
 
               <h1>
                 ZeZo<br>
@@ -1241,8 +1247,14 @@
             <article class="card feature-card">
               <div class="feature-number">01 / 03</div>
               <h2>Database</h2>
-              <p>Manage and inspect your ZeZo data environment.</p>
-              <button class="action-button" data-message="Database module is locked in beta">
+              <p>
+                Manage and inspect your ZeZo data environment.
+              </p>
+
+              <button
+                class="action-button"
+                data-message="Database module is locked in beta"
+              >
                 Locked
               </button>
             </article>
@@ -1250,8 +1262,14 @@
             <article class="card feature-card">
               <div class="feature-number">02 / 03</div>
               <h2>Generator</h2>
-              <p>Create testing data for the ZeZo environment.</p>
-              <button class="action-button" data-message="Generator will be available soon">
+              <p>
+                Create testing data for the ZeZo environment.
+              </p>
+
+              <button
+                class="action-button"
+                data-message="Generator will be available soon"
+              >
                 Coming Soon
               </button>
             </article>
@@ -1259,8 +1277,14 @@
             <article class="card feature-card">
               <div class="feature-number">03 / 03</div>
               <h2>Monitor</h2>
-              <p>Monitor the current status of your system.</p>
-              <button class="action-button" data-message="System monitor is currently in beta">
+              <p>
+                Monitor the current status of your system.
+              </p>
+
+              <button
+                class="action-button"
+                data-message="System monitor is currently in beta"
+              >
                 Preview
               </button>
             </article>
@@ -1271,7 +1295,9 @@
         <section class="page" data-content="activity">
           <div class="heading">
             <div>
-              <div class="eyebrow">System / Activity history</div>
+              <div class="eyebrow">
+                System / Activity history
+              </div>
 
               <h1>
                 Activity<br>
@@ -1321,7 +1347,9 @@
         <section class="page" data-content="account">
           <div class="heading">
             <div>
-              <div class="eyebrow">Identity / User profile</div>
+              <div class="eyebrow">
+                Identity / User profile
+              </div>
 
               <h1>
                 Your<br>
@@ -1334,7 +1362,7 @@
             </div>
           </div>
 
-          <div class="account-panel">
+          <div class="card account-panel">
             <div class="account-header">
               <div class="big-avatar">X</div>
 
@@ -1380,7 +1408,9 @@
         <section class="page" data-content="settings">
           <div class="heading">
             <div>
-              <div class="eyebrow">System / Configuration</div>
+              <div class="eyebrow">
+                System / Configuration
+              </div>
 
               <h1>
                 System<br>
@@ -1393,7 +1423,7 @@
             </div>
           </div>
 
-          <div class="settings-panel">
+          <div class="card settings-panel">
             <div class="setting-row">
               <div class="setting-info">
                 <h3>Animations</h3>
@@ -1445,10 +1475,6 @@
     const toast = document.getElementById("toast");
     const logoutButton = document.getElementById("logoutButton");
 
-    let currentPage = "overview";
-    let isChanging = false;
-    let toastTimer;
-
     const pageNames = {
       overview: "Overview",
       tools: "ZeZo Tools",
@@ -1456,6 +1482,10 @@
       account: "Account",
       settings: "Settings"
     };
+
+    let currentPage = "overview";
+    let isChanging = false;
+    let toastTimer;
 
     function showToast(message) {
       toast.textContent = message;
@@ -1469,7 +1499,12 @@
     }
 
     function changePage(nextPage) {
-      if (nextPage === currentPage || isChanging) return;
+      if (
+        nextPage === currentPage ||
+        isChanging
+      ) {
+        return;
+      }
 
       const oldPage = document.querySelector(
         `[data-content="${currentPage}"]`
@@ -1479,25 +1514,22 @@
         `[data-content="${nextPage}"]`
       );
 
-      const oldButton = document.querySelector(
-        `[data-page="${currentPage}"]`
-      );
-
-      const newButton = document.querySelector(
-        `[data-page="${nextPage}"]`
-      );
-
-      if (!oldPage || !newPage) return;
+      if (!oldPage || !newPage) {
+        return;
+      }
 
       isChanging = true;
 
+      /*
+        Hanya tombol tujuan yang aktif.
+        Ini memperbaiki masalah dua tombol sidebar aktif.
+      */
       navButtons.forEach((button) => {
-        button.classList.remove("active");
+        button.classList.toggle(
+          "active",
+          button.dataset.page === nextPage
+        );
       });
-
-      newButton.classList.add("active");
-
-      oldButton.classList.add("active");
 
       oldPage.classList.add("leaving");
 
@@ -1520,9 +1552,9 @@
       });
     });
 
-    document.querySelectorAll("[data-action]").forEach((button) => {
+    document.querySelectorAll("[data-open-page]").forEach((button) => {
       button.addEventListener("click", () => {
-        changePage(button.dataset.action);
+        changePage(button.dataset.openPage);
       });
     });
 
@@ -1545,7 +1577,9 @@
     });
 
     logoutButton.addEventListener("click", () => {
-      showToast("Session ended — login page will be connected later");
+      showToast(
+        "Session ended — login page will be connected later"
+      );
     });
 
     function updateClock() {
@@ -1565,13 +1599,10 @@
     updateClock();
     setInterval(updateClock, 1000);
 
-    const isMobile = window.matchMedia(
-      "(max-width: 700px)"
-    ).matches;
-
-    deviceType.textContent = isMobile
-      ? "Mobile device"
-      : "Desktop device";
+    deviceType.textContent =
+      window.matchMedia("(max-width:700px)").matches
+        ? "Mobile device"
+        : "Desktop device";
   </script>
 </body>
 </html>
