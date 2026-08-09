@@ -2479,4 +2479,158 @@ startTiktokDownload.addEventListener("click", async () => {
       link.href = mediaUrl;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.download
+      link.download = getMediaFileName(
+        mediaUrl,
+        result
+      );
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }, 600);
+
+  } catch (error) {
+    console.error(error);
+
+    showTiktokView("failed");
+
+    tiktokFailedText.textContent =
+      "Download gagal. API mungkin sedang offline atau media tidak ditemukan.";
+  }
+});
+
+/*
+  AIO MEDIA FINDER
+  Tidak memblokir ekstensi file.
+  Bisa menerima MP4, MP3, M4A, WEBM, dan format lain.
+*/
+function findMediaUrl(data) {
+  const priorityKeys = [
+    "download",
+    "downloadUrl",
+    "download_url",
+    "media",
+    "mediaUrl",
+    "media_url",
+    "video",
+    "videoUrl",
+    "video_url",
+    "audio",
+    "audioUrl",
+    "audio_url",
+    "play",
+    "playUrl",
+    "play_url",
+    "url"
+  ];
+
+  function isHttpUrl(value) {
+    return (
+      typeof value === "string" &&
+      (
+        value.startsWith("https://") ||
+        value.startsWith("http://")
+      )
+    );
+  }
+
+  function scan(value, depth = 0) {
+    if (
+      depth > 8 ||
+      value === null ||
+      value === undefined
+    ) {
+      return null;
+    }
+
+    if (typeof value === "string") {
+      return isHttpUrl(value)
+        ? value
+        : null;
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const result = scan(item, depth + 1);
+
+        if (result) {
+          return result;
+        }
+      }
+
+      return null;
+    }
+
+    if (typeof value !== "object") {
+      return null;
+    }
+
+    for (const key of priorityKeys) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          value,
+          key
+        )
+      ) {
+        const result = scan(
+          value[key],
+          depth + 1
+        );
+
+        if (result) {
+          return result;
+        }
+      }
+    }
+
+    for (const key of Object.keys(value)) {
+      const result = scan(
+        value[key],
+        depth + 1
+      );
+
+      if (result) {
+        return result;
+      }
+    }
+
+    return null;
+  }
+
+  return scan(data);
+}
+
+function getMediaFileName(mediaUrl, apiData) {
+  const lowerUrl = String(mediaUrl).toLowerCase();
+  const dataText = JSON.stringify(apiData).toLowerCase();
+
+  let extension = "mp4";
+
+  if (
+    lowerUrl.includes(".mp3") ||
+    dataText.includes("mp3")
+  ) {
+    extension = "mp3";
+  } else if (
+    lowerUrl.includes(".m4a") ||
+    dataText.includes("m4a")
+  ) {
+    extension = "m4a";
+  } else if (
+    lowerUrl.includes(".webm") ||
+    dataText.includes("webm")
+  ) {
+    extension = "webm";
+  } else if (
+    lowerUrl.includes(".mov") ||
+    dataText.includes("mov")
+  ) {
+    extension = "mov";
+  }
+
+  return `zezo-download.${extension}`;
+}
+</script>
+
+</body>
+</html>
