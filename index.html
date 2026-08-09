@@ -2473,9 +2473,9 @@ startTiktokDownload.addEventListener("click", async () => {
 
   try {
     const apiUrl =
-      "https://api-faa.my.id/faa/tiktok?url=" +
-      encodeURIComponent(tiktokUrl);
-
+  "https://api-faa.my.id/faa/tiktok?url=" +
+  encodeURIComponent(tiktokUrl);
+    
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
