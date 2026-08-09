@@ -22,46 +22,44 @@ const totalTimeElement = document.getElementById("totalTime");
 
 let songs = [];
 let currentSongIndex = -1;
-let searchTimer = null;
+let searchTimer;
 
-function escapeHTML(value) {
+function escapeHTML(value){
   return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 }
 
-function formatTime(seconds) {
-  if (!Number.isFinite(seconds)) {
+function formatTime(seconds){
+  if(!Number.isFinite(seconds)){
     return "00:00";
   }
 
   const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
+  const secondsLeft = Math.floor(seconds % 60);
 
-  return `${String(minutes).padStart(2, "0")}:${String(
-    remainingSeconds
-  ).padStart(2, "0")}`;
+  return `${String(minutes).padStart(2,"0")}:${String(
+    secondsLeft
+  ).padStart(2,"0")}`;
 }
 
-function setSongStatus(message) {
+function setSongStatus(message){
   songStatus.textContent = message;
 }
 
-function getArtwork(url, size = 600) {
-  if (!url) {
-    return "";
-  }
+function getArtwork(url,size=600){
+  if(!url) return "";
 
   return url
-    .replace("100x100bb", `${size}x${size}bb`)
-    .replace("100x100", `${size}x${size}`);
+    .replace("100x100bb",`${size}x${size}bb`)
+    .replace("100x100",`${size}x${size}`);
 }
 
-function renderSongs() {
-  if (!songs.length) {
+function renderSongs(){
+  if(!songs.length){
     songResults.innerHTML = `
       <div class="song-search-status">
         No playable preview found.
@@ -71,7 +69,7 @@ function renderSongs() {
     return;
   }
 
-  songResults.innerHTML = songs.map((song, index) => {
+  songResults.innerHTML = songs.map((song,index) => {
     const artwork = getArtwork(
       song.artworkUrl100,
       200
@@ -79,10 +77,6 @@ function renderSongs() {
 
     const title = escapeHTML(song.trackName);
     const artist = escapeHTML(song.artistName);
-
-    const duration = formatTime(
-      song.trackTimeMillis / 1000
-    );
 
     return `
       <button
@@ -111,7 +105,7 @@ function renderSongs() {
         </span>
 
         <span class="song-result-duration">
-          ${duration}
+          ${formatTime(song.trackTimeMillis / 1000)}
         </span>
       </button>
     `;
@@ -119,8 +113,8 @@ function renderSongs() {
 
   document.querySelectorAll(
     "[data-song-index]"
-  ).forEach((button) => {
-    button.addEventListener("click", () => {
+  ).forEach(button => {
+    button.addEventListener("click",() => {
       selectSong(
         Number(button.dataset.songIndex)
       );
@@ -128,10 +122,10 @@ function renderSongs() {
   });
 }
 
-async function searchSongs(keyword) {
+async function searchSongs(keyword){
   const query = keyword.trim();
 
-  if (!query) {
+  if(!query){
     setSongStatus(
       "Search for your favorite song."
     );
@@ -144,33 +138,26 @@ async function searchSongs(keyword) {
     "Searching music database..."
   );
 
-  songResults.innerHTML = "";
-
-  try {
+  try{
     const apiUrl =
       "https://itunes.apple.com/search?" +
       new URLSearchParams({
-        term: query,
-        media: "music",
-        entity: "song",
-        limit: "15"
+        term:query,
+        media:"music",
+        entity:"song",
+        limit:"15"
       });
 
     const response = await fetch(apiUrl);
-
-    if (!response.ok) {
-      throw new Error("Search failed");
-    }
-
     const data = await response.json();
 
-    songs = (data.results || []).filter((song) => {
+    songs = (data.results || []).filter(song => {
       return song.previewUrl && song.trackName;
     });
 
     currentSongIndex = -1;
 
-    if (!songs.length) {
+    if(!songs.length){
       setSongStatus(
         "No playable preview found."
       );
@@ -190,10 +177,12 @@ async function searchSongs(keyword) {
 
     renderSongs();
 
-  } catch (error) {
+  }catch(error){
     console.error(error);
 
-    setSongStatus("Search failed.");
+    setSongStatus(
+      "Search failed."
+    );
 
     songResults.innerHTML = `
       <div class="song-search-status">
@@ -203,10 +192,10 @@ async function searchSongs(keyword) {
   }
 }
 
-function selectSong(index) {
+function selectSong(index){
   const song = songs[index];
 
-  if (!song || !song.previewUrl) {
+  if(!song || !song.previewUrl){
     setSongStatus(
       "This song has no available preview."
     );
@@ -216,24 +205,17 @@ function selectSong(index) {
 
   currentSongIndex = index;
 
-  const artwork = getArtwork(
-    song.artworkUrl100,
-    600
-  );
-
-  const previewUrl =
-    song.previewUrl.replace(
-      /^http:/,
-      "https:"
-    );
-
   playerPlaceholder.hidden = true;
   playerPlaceholder.style.display = "none";
 
   activePlayer.hidden = false;
   activePlayer.style.display = "block";
 
-  playerArtwork.src = artwork;
+  playerArtwork.src = getArtwork(
+    song.artworkUrl100,
+    600
+  );
+
   playerArtwork.alt =
     `${song.trackName} artwork`;
 
@@ -244,13 +226,14 @@ function selectSong(index) {
 
   songAudio.pause();
   songAudio.currentTime = 0;
-  songAudio.src = previewUrl;
+  songAudio.src =
+    song.previewUrl.replace(/^http:/,"https:");
   songAudio.load();
 
-  playPauseButton.textContent = "▶";
   songProgress.value = 0;
   currentTimeElement.textContent = "00:00";
   totalTimeElement.textContent = "00:00";
+  playPauseButton.textContent = "▶";
 
   renderSongs();
 
@@ -259,149 +242,108 @@ function selectSong(index) {
       playPauseButton.textContent = "Ⅱ";
     })
     .catch(() => {
-      playPauseButton.textContent = "▶";
       setSongStatus(
         "Press play to start the preview."
       );
     });
 }
 
-function togglePlay() {
-  if (!songAudio.src) {
+function togglePlay(){
+  if(!songAudio.src){
     setSongStatus("Select a song first.");
     return;
   }
 
-  if (songAudio.paused) {
+  if(songAudio.paused){
     songAudio.play()
       .then(() => {
         playPauseButton.textContent = "Ⅱ";
-      })
-      .catch(() => {
-        setSongStatus(
-          "Preview could not be played."
-        );
       });
-  } else {
+  }else{
     songAudio.pause();
     playPauseButton.textContent = "▶";
   }
 }
 
-function selectPreviousSong() {
-  if (!songs.length) {
-    return;
-  }
+function previous(){
+  if(!songs.length) return;
 
-  const nextIndex =
+  const index =
     currentSongIndex <= 0
       ? songs.length - 1
       : currentSongIndex - 1;
 
-  selectSong(nextIndex);
+  selectSong(index);
 }
 
-function selectNextSong() {
-  if (!songs.length) {
-    return;
-  }
+function next(){
+  if(!songs.length) return;
 
-  const nextIndex =
+  const index =
     currentSongIndex >= songs.length - 1
       ? 0
       : currentSongIndex + 1;
 
-  selectSong(nextIndex);
+  selectSong(index);
 }
 
-songForm.addEventListener("submit", (event) => {
+songForm.addEventListener("submit",event => {
   event.preventDefault();
   searchSongs(songInput.value);
 });
 
-songInput.addEventListener("input", () => {
+songInput.addEventListener("input",() => {
   clearTimeout(searchTimer);
 
   searchTimer = setTimeout(() => {
-    if (songInput.value.trim().length >= 2) {
+    if(songInput.value.trim().length >= 2){
       searchSongs(songInput.value);
     }
-  }, 600);
+  },600);
 });
 
-playPauseButton.addEventListener(
-  "click",
-  togglePlay
-);
+playPauseButton.addEventListener("click",togglePlay);
+previousSong.addEventListener("click",previous);
+nextSong.addEventListener("click",next);
 
-previousSong.addEventListener(
-  "click",
-  selectPreviousSong
-);
+songAudio.addEventListener("loadedmetadata",() => {
+  totalTimeElement.textContent =
+    formatTime(songAudio.duration);
+});
 
-nextSong.addEventListener(
-  "click",
-  selectNextSong
-);
+songAudio.addEventListener("timeupdate",() => {
+  if(!songAudio.duration) return;
 
-songAudio.addEventListener(
-  "loadedmetadata",
-  () => {
-    totalTimeElement.textContent =
-      formatTime(songAudio.duration);
+  songProgress.value =
+    songAudio.currentTime /
+    songAudio.duration *
+    100;
+
+  currentTimeElement.textContent =
+    formatTime(songAudio.currentTime);
+});
+
+songAudio.addEventListener("ended",() => {
+  playPauseButton.textContent = "▶";
+
+  if(songs.length > 1){
+    next();
   }
-);
+});
 
-songAudio.addEventListener(
-  "timeupdate",
-  () => {
-    if (!songAudio.duration) {
-      return;
-    }
+songProgress.addEventListener("input",() => {
+  if(!songAudio.duration) return;
 
-    const percentage =
-      songAudio.currentTime /
-      songAudio.duration *
-      100;
+  songAudio.currentTime =
+    Number(songProgress.value) /
+    100 *
+    songAudio.duration;
+});
 
-    songProgress.value = percentage;
+songAudio.addEventListener("error",() => {
+  setSongStatus(
+    "Audio preview is unavailable."
+  );
 
-    currentTimeElement.textContent =
-      formatTime(songAudio.currentTime);
-  }
-);
-
-songAudio.addEventListener(
-  "ended",
-  () => {
-    playPauseButton.textContent = "▶";
-
-    if (songs.length > 1) {
-      selectNextSong();
-    }
-  }
-);
-
-songProgress.addEventListener(
-  "input",
-  () => {
-    if (!songAudio.duration) {
-      return;
-    }
-
-    songAudio.currentTime =
-      Number(songProgress.value) /
-      100 *
-      songAudio.duration;
-  }
-);
-
-songAudio.addEventListener(
-  "error",
-  () => {
-    playPauseButton.textContent = "▶";
-    setSongStatus(
-      "Audio preview is unavailable."
-    );
-  }
-);
+  playPauseButton.textContent = "▶";
+});
