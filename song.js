@@ -227,11 +227,6 @@ function selectSong(index) {
       "https:"
     );
 
-  /*
-    FIX PLAYER:
-    Placeholder disembunyikan total
-    saat lagu dipilih.
-  */
   playerPlaceholder.hidden = true;
   playerPlaceholder.style.display = "none";
 
