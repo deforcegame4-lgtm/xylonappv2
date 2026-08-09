@@ -72,9 +72,14 @@ function renderSongs() {
   }
 
   songResults.innerHTML = songs.map((song, index) => {
-    const artwork = getArtwork(song.artworkUrl100, 200);
+    const artwork = getArtwork(
+      song.artworkUrl100,
+      200
+    );
+
     const title = escapeHTML(song.trackName);
     const artist = escapeHTML(song.artistName);
+
     const duration = formatTime(
       song.trackTimeMillis / 1000
     );
@@ -82,7 +87,9 @@ function renderSongs() {
     return `
       <button
         class="song-result ${
-          index === currentSongIndex ? "selected" : ""
+          index === currentSongIndex
+            ? "selected"
+            : ""
         }"
         data-song-index="${index}"
         type="button"
@@ -110,9 +117,13 @@ function renderSongs() {
     `;
   }).join("");
 
-  document.querySelectorAll("[data-song-index]").forEach((button) => {
+  document.querySelectorAll(
+    "[data-song-index]"
+  ).forEach((button) => {
     button.addEventListener("click", () => {
-      selectSong(Number(button.dataset.songIndex));
+      selectSong(
+        Number(button.dataset.songIndex)
+      );
     });
   });
 }
@@ -121,12 +132,18 @@ async function searchSongs(keyword) {
   const query = keyword.trim();
 
   if (!query) {
-    setSongStatus("Search for your favorite song.");
+    setSongStatus(
+      "Search for your favorite song."
+    );
+
     songResults.innerHTML = "";
     return;
   }
 
-  setSongStatus("Searching music database...");
+  setSongStatus(
+    "Searching music database..."
+  );
+
   songResults.innerHTML = "";
 
   try {
@@ -154,7 +171,9 @@ async function searchSongs(keyword) {
     currentSongIndex = -1;
 
     if (!songs.length) {
-      setSongStatus("No playable preview found.");
+      setSongStatus(
+        "No playable preview found."
+      );
 
       songResults.innerHTML = `
         <div class="song-search-status">
@@ -170,6 +189,7 @@ async function searchSongs(keyword) {
     );
 
     renderSongs();
+
   } catch (error) {
     console.error(error);
 
@@ -187,7 +207,10 @@ function selectSong(index) {
   const song = songs[index];
 
   if (!song || !song.previewUrl) {
-    setSongStatus("This song has no available preview.");
+    setSongStatus(
+      "This song has no available preview."
+    );
+
     return;
   }
 
@@ -199,10 +222,21 @@ function selectSong(index) {
   );
 
   const previewUrl =
-    song.previewUrl.replace(/^http:/, "https:");
+    song.previewUrl.replace(
+      /^http:/,
+      "https:"
+    );
 
+  /*
+    FIX:
+    Placeholder disembunyikan paksa
+    sebelum player lagu ditampilkan.
+  */
   playerPlaceholder.hidden = true;
+  playerPlaceholder.style.display = "none";
+
   activePlayer.hidden = false;
+  activePlayer.style.display = "block";
 
   playerArtwork.src = artwork;
   playerArtwork.alt =
@@ -315,47 +349,64 @@ nextSong.addEventListener(
   selectNextSong
 );
 
-songAudio.addEventListener("loadedmetadata", () => {
-  totalTimeElement.textContent =
-    formatTime(songAudio.duration);
-});
-
-songAudio.addEventListener("timeupdate", () => {
-  if (!songAudio.duration) {
-    return;
+songAudio.addEventListener(
+  "loadedmetadata",
+  () => {
+    totalTimeElement.textContent =
+      formatTime(songAudio.duration);
   }
+);
 
-  const percentage =
-    songAudio.currentTime /
-    songAudio.duration *
-    100;
+songAudio.addEventListener(
+  "timeupdate",
+  () => {
+    if (!songAudio.duration) {
+      return;
+    }
 
-  songProgress.value = percentage;
+    const percentage =
+      songAudio.currentTime /
+      songAudio.duration *
+      100;
 
-  currentTimeElement.textContent =
-    formatTime(songAudio.currentTime);
-});
+    songProgress.value = percentage;
 
-songAudio.addEventListener("ended", () => {
-  playPauseButton.textContent = "▶";
-
-  if (songs.length > 1) {
-    selectNextSong();
+    currentTimeElement.textContent =
+      formatTime(songAudio.currentTime);
   }
-});
+);
 
-songProgress.addEventListener("input", () => {
-  if (!songAudio.duration) {
-    return;
+songAudio.addEventListener(
+  "ended",
+  () => {
+    playPauseButton.textContent = "▶";
+
+    if (songs.length > 1) {
+      selectNextSong();
+    }
   }
+);
 
-  songAudio.currentTime =
-    Number(songProgress.value) /
-    100 *
-    songAudio.duration;
-});
+songProgress.addEventListener(
+  "input",
+  () => {
+    if (!songAudio.duration) {
+      return;
+    }
 
-songAudio.addEventListener("error", () => {
-  playPauseButton.textContent = "▶";
-  setSongStatus("Audio preview is unavailable.");
-});
+    songAudio.currentTime =
+      Number(songProgress.value) /
+      100 *
+      songAudio.duration;
+  }
+);
+
+songAudio.addEventListener(
+  "error",
+  () => {
+    playPauseButton.textContent = "▶";
+    setSongStatus(
+      "Audio preview is unavailable."
+    );
+  }
+);
