@@ -228,9 +228,9 @@ function selectSong(index) {
     );
 
   /*
-    FIX:
-    Placeholder disembunyikan paksa
-    sebelum player lagu ditampilkan.
+    FIX PLAYER:
+    Placeholder disembunyikan total
+    saat lagu dipilih.
   */
   playerPlaceholder.hidden = true;
   playerPlaceholder.style.display = "none";
