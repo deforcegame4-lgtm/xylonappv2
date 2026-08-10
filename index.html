@@ -6,8 +6,6 @@
 <meta name="theme-color" content="#050505">
 <title>ZeZo Core Dashboard</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -19,6 +17,7 @@
   --muted:#555;
   --line:rgba(255,255,255,.15);
   --soft:rgba(255,255,255,.07);
+  --ease:cubic-bezier(.16,1,.3,1);
 }
 
 *{
@@ -61,16 +60,11 @@ button{
   cursor:pointer;
 }
 
-.app{
-  display:flex;
-  min-height:100vh;
-}
-
 /* SIDEBAR */
 .sidebar{
   position:fixed;
   inset:0 auto 0 0;
-  z-index:10;
+  z-index:30;
   display:flex;
   flex-direction:column;
   width:240px;
@@ -237,15 +231,25 @@ button{
   gap:10px;
 }
 
-.avatar{
+.avatar,
+.big-avatar{
   display:grid;
   place-items:center;
-  width:31px;
-  height:31px;
   overflow:hidden;
   border:1px solid #fff;
   border-radius:50%;
+}
+
+.avatar{
+  width:31px;
+  height:31px;
   font-size:10px;
+}
+
+.big-avatar{
+  width:76px;
+  height:76px;
+  font-size:23px;
 }
 
 .avatar img,
@@ -262,14 +266,65 @@ button{
   text-transform:uppercase;
 }
 
-/* PAGE */
+/* PAGE ANIMATION */
+.page-wrapper{
+  position:relative;
+  min-height:740px;
+}
+
 .page{
   display:none;
   padding-top:58px;
+  opacity:0;
+  transform:translateX(35px) scale(.985);
+  filter:blur(4px);
 }
 
 .page.active{
   display:block;
+  animation:pageIn .65s var(--ease) forwards;
+}
+
+.page.page-leave{
+  display:block;
+  animation:pageOut .28s var(--ease) forwards;
+}
+
+.no-animation .page,
+.no-animation .page.active,
+.no-animation .page.page-leave{
+  animation:none!important;
+  opacity:1!important;
+  transform:none!important;
+  filter:none!important;
+}
+
+@keyframes pageIn{
+  from{
+    opacity:0;
+    transform:translateX(35px) scale(.985);
+    filter:blur(4px);
+  }
+
+  to{
+    opacity:1;
+    transform:translateX(0) scale(1);
+    filter:blur(0);
+  }
+}
+
+@keyframes pageOut{
+  from{
+    opacity:1;
+    transform:translateX(0);
+    filter:blur(0);
+  }
+
+  to{
+    opacity:0;
+    transform:translateX(-35px);
+    filter:blur(4px);
+  }
 }
 
 .heading{
@@ -319,6 +374,7 @@ h1{
   text-transform:uppercase;
 }
 
+/* CARDS */
 .card{
   border:1px solid var(--line);
   background:
@@ -488,6 +544,7 @@ h1{
   color:#555;
 }
 
+/* ACCOUNT */
 .account-panel,
 .settings-panel{
   max-width:720px;
@@ -499,17 +556,6 @@ h1{
   gap:20px;
   padding-bottom:28px;
   border-bottom:1px solid var(--soft);
-}
-
-.big-avatar{
-  display:grid;
-  place-items:center;
-  width:76px;
-  height:76px;
-  overflow:hidden;
-  border:1px solid #fff;
-  border-radius:50%;
-  font-size:23px;
 }
 
 .account-header h2{
@@ -555,6 +601,7 @@ h1{
   width:auto;
 }
 
+/* SETTINGS */
 .setting-row{
   display:flex;
   align-items:center;
@@ -607,7 +654,7 @@ h1{
 .tool-modal{
   position:fixed;
   inset:0;
-  z-index:50;
+  z-index:100;
   display:grid;
   place-items:center;
   padding:20px;
@@ -749,7 +796,7 @@ h1{
   position:fixed;
   right:24px;
   bottom:24px;
-  z-index:100;
+  z-index:200;
   max-width:320px;
   padding:17px 19px;
   border:1px solid var(--line);
@@ -778,6 +825,7 @@ h1{
   text-transform:uppercase;
 }
 
+/* MOBILE */
 @media(max-width:900px){
   .sidebar{
     width:205px;
@@ -940,6 +988,8 @@ h1{
     </div>
   </div>
 </header>
+
+<div class="page-wrapper">
 
 <section class="page active" data-content="overview">
   <div class="heading">
@@ -1197,6 +1247,15 @@ h1{
   <div class="card settings-panel">
     <div class="setting-row">
       <div class="setting-info">
+        <h3>Animations</h3>
+        <p>Enable page transition animations</p>
+      </div>
+
+      <button class="toggle" id="animationToggle"></button>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-info">
         <h3>System Notifications</h3>
         <p>Show messages from beta tools</p>
       </div>
@@ -1206,6 +1265,8 @@ h1{
   </div>
 </section>
 
+</div>
+
 <footer class="footer">
   <span>ZeZo Core Dashboard</span>
   <span>Beta build / Faa API</span>
@@ -1214,7 +1275,7 @@ h1{
 </main>
 </div>
 
-<!-- MODAL DOWNLOAD -->
+<!-- MODAL FAA API -->
 <div class="tool-modal" id="tiktokModal">
   <div class="tool-box">
 
@@ -1261,7 +1322,7 @@ h1{
       </div>
 
       <div class="tool-status-text">
-        Link video sedang dibuka di tab baru.
+        Video sedang dibuka di tab baru.
       </div>
 
       <button class="tool-back" id="successBackButton">
@@ -1291,10 +1352,6 @@ h1{
 <div class="toast" id="toast"></div>
 
 <script>
-/*
-  Faa API tidak memakai API key.
-  Endpoint mengikuti format yang kamu berikan.
-*/
 const FAA_API_URL =
   "https://api-faa.my.id/faa/tiktok?url=";
 
@@ -1315,6 +1372,12 @@ const deviceType =
 
 const toast =
   document.getElementById("toast");
+
+const animationToggle =
+  document.getElementById("animationToggle");
+
+const notificationToggle =
+  document.getElementById("notificationToggle");
 
 const openTiktokTool =
   document.getElementById("openTiktokTool");
@@ -1352,9 +1415,6 @@ const successBackButton =
 const failedBackButton =
   document.getElementById("failedBackButton");
 
-const notificationToggle =
-  document.getElementById("notificationToggle");
-
 const usernameInput =
   document.getElementById("usernameInput");
 
@@ -1383,6 +1443,7 @@ const topAvatar =
   document.getElementById("topAvatar");
 
 let toastTimer;
+let changingPage = false;
 
 function showToast(message,force = false){
   const enabled =
@@ -1400,32 +1461,128 @@ function showToast(message,force = false){
   },3000);
 }
 
-/* NAVIGASI */
+function animationsEnabled(){
+  return localStorage.getItem(
+    "zezoAnimations"
+  ) !== "false";
+}
+
+function updateAnimationToggle(){
+  animationToggle.classList.toggle(
+    "off",
+    !animationsEnabled()
+  );
+}
+
+function changePage(pageName){
+  if(changingPage) return;
+
+  const oldPage =
+    document.querySelector(".page.active");
+
+  const newPage =
+    document.querySelector(
+      `[data-content="${pageName}"]`
+    );
+
+  if(!newPage || oldPage === newPage){
+    return;
+  }
+
+  navButtons.forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.page === pageName
+    );
+  });
+
+  breadcrumbText.textContent =
+    pageName.charAt(0).toUpperCase() +
+    pageName.slice(1);
+
+  if(!animationsEnabled()){
+    pages.forEach(page => {
+      page.classList.remove(
+        "active",
+        "page-leave"
+      );
+    });
+
+    newPage.classList.add("active");
+    return;
+  }
+
+  changingPage = true;
+
+  oldPage.classList.remove("active");
+  oldPage.classList.add("page-leave");
+
+  setTimeout(() => {
+    oldPage.classList.remove("page-leave");
+    newPage.classList.add("active");
+
+    setTimeout(() => {
+      changingPage = false;
+    },650);
+  },280);
+}
+
 navButtons.forEach(button => {
   button.addEventListener("click",() => {
-    const pageName = button.dataset.page;
-
-    pages.forEach(page => {
-      page.classList.toggle(
-        "active",
-        page.dataset.content === pageName
-      );
-    });
-
-    navButtons.forEach(item => {
-      item.classList.toggle(
-        "active",
-        item === button
-      );
-    });
-
-    breadcrumbText.textContent =
-      pageName.charAt(0).toUpperCase() +
-      pageName.slice(1);
+    changePage(button.dataset.page);
   });
 });
 
-/* CLOCK */
+animationToggle.addEventListener("click",() => {
+  const enabled = animationsEnabled();
+
+  localStorage.setItem(
+    "zezoAnimations",
+    String(!enabled)
+  );
+
+  updateAnimationToggle();
+
+  showToast(
+    !enabled
+      ? "Page animations enabled"
+      : "Page animations disabled",
+    true
+  );
+});
+
+notificationToggle.addEventListener("click",() => {
+  const enabled =
+    localStorage.getItem("zezoNotifications") !== "false";
+
+  localStorage.setItem(
+    "zezoNotifications",
+    String(!enabled)
+  );
+
+  updateNotificationToggle();
+
+  showToast(
+    !enabled
+      ? "Notifications enabled"
+      : "Notifications disabled",
+    true
+  );
+});
+
+function updateNotificationToggle(){
+  const enabled =
+    localStorage.getItem("zezoNotifications") !== "false";
+
+  notificationToggle.classList.toggle(
+    "off",
+    !enabled
+  );
+}
+
+updateAnimationToggle();
+updateNotificationToggle();
+
 function updateClock(){
   const now = new Date();
 
@@ -1447,7 +1604,7 @@ deviceType.textContent =
     ? "Mobile device"
     : "Desktop device";
 
-/* BETA BUTTON */
+/* BETA TOOLS */
 document
   .querySelectorAll("[data-message]")
   .forEach(button => {
@@ -1550,38 +1707,6 @@ photoInput.addEventListener("change",event => {
   reader.readAsDataURL(file);
 });
 
-/* NOTIFICATION */
-function updateNotificationToggle(){
-  const enabled =
-    localStorage.getItem("zezoNotifications") !== "false";
-
-  notificationToggle.classList.toggle(
-    "off",
-    !enabled
-  );
-}
-
-notificationToggle.addEventListener("click",() => {
-  const enabled =
-    localStorage.getItem("zezoNotifications") !== "false";
-
-  localStorage.setItem(
-    "zezoNotifications",
-    String(!enabled)
-  );
-
-  updateNotificationToggle();
-
-  showToast(
-    !enabled
-      ? "Notifications enabled"
-      : "Notifications disabled",
-    true
-  );
-});
-
-updateNotificationToggle();
-
 /* MODAL */
 function showTiktokView(view){
   tiktokInputView.hidden =
@@ -1646,7 +1771,7 @@ failedBackButton.addEventListener("click",() => {
   tiktokUrlInput.focus();
 });
 
-/* FAA API */
+/* FAA API DOWNLOAD */
 startTiktokDownload.addEventListener("click",async() => {
   const tiktokUrl =
     tiktokUrlInput.value.trim();
@@ -1693,7 +1818,7 @@ startTiktokDownload.addEventListener("click",async() => {
       data = JSON.parse(rawText);
     }catch{
       throw new Error(
-        "Response Faa API bukan JSON."
+        "Response dari Faa API bukan JSON."
       );
     }
 
@@ -1705,17 +1830,10 @@ startTiktokDownload.addEventListener("click",async() => {
 
     if(data.status !== true){
       throw new Error(
-        "Faa API gagal memproses video."
+        "Faa API gagal memproses link tersebut."
       );
     }
 
-    /*
-      Prioritas:
-      1. Video HD
-      2. Video selected
-      3. Video utama
-      4. Video SD
-    */
     const videoUrl =
       data.result?.alternatives?.hd ||
       data.result?.alternatives?.selected ||
@@ -1737,7 +1855,8 @@ startTiktokDownload.addEventListener("click",async() => {
       link.href = videoUrl;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.download = "zezo-tiktok-video.mp4";
+      link.download =
+        "zezo-tiktok-video.mp4";
 
       document.body.appendChild(link);
       link.click();
@@ -1751,7 +1870,7 @@ startTiktokDownload.addEventListener("click",async() => {
 
     if(error instanceof TypeError){
       tiktokFailedText.textContent =
-        "Request ditolak browser. Kemungkinan Faa API belum mengizinkan CORS.";
+        "Request ditolak browser. Kemungkinan Faa API sedang bermasalah dengan CORS.";
     }else{
       tiktokFailedText.textContent =
         error.message ||
