@@ -1,38 +1,1765 @@
-async function downloadTikTok(tiktokUrl){
-  const apiUrl =
-    "https://api-faa.my.id/faa/tiktok?url=" +
-    encodeURIComponent(tiktokUrl);
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#050505">
+<title>ZeZo Core Dashboard</title>
 
-  const response = await fetch(apiUrl);
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  if(!response.ok){
-    throw new Error(
-      `Faa API error: ${response.status}`
-    );
+<style>
+:root{
+  --bg:#050505;
+  --panel:#0b0b0b;
+  --text:#f5f5f5;
+  --gray:#888;
+  --muted:#555;
+  --line:rgba(255,255,255,.15);
+  --soft:rgba(255,255,255,.07);
+}
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+[hidden]{
+  display:none!important;
+}
+
+body{
+  min-height:100vh;
+  overflow-x:hidden;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Space Grotesk",Arial,sans-serif;
+}
+
+body:before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  opacity:.06;
+  pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.2) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.2) 1px,transparent 1px);
+  background-size:70px 70px;
+}
+
+button,
+input{
+  font-family:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+.app{
+  display:flex;
+  min-height:100vh;
+}
+
+/* SIDEBAR */
+.sidebar{
+  position:fixed;
+  inset:0 auto 0 0;
+  z-index:10;
+  display:flex;
+  flex-direction:column;
+  width:240px;
+  padding:28px 18px;
+  border-right:1px solid var(--line);
+  background:rgba(5,5,5,.94);
+  backdrop-filter:blur(15px);
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 12px;
+  margin-bottom:70px;
+}
+
+.logo-mark{
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  border:1px solid #fff;
+  border-radius:50%;
+  font-weight:700;
+}
+
+.logo-name{
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:.25em;
+  text-transform:uppercase;
+}
+
+.logo-beta{
+  display:block;
+  margin-top:4px;
+  color:#666;
+  font-size:8px;
+  letter-spacing:.15em;
+}
+
+.nav-label{
+  padding:0 13px;
+  margin-bottom:13px;
+  color:#555;
+  font-size:9px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+}
+
+.nav{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+
+.nav-button{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:13px;
+  width:100%;
+  padding:13px;
+  border:1px solid transparent;
+  background:transparent;
+  color:#777;
+  font-size:10px;
+  letter-spacing:.13em;
+  text-align:left;
+  text-transform:uppercase;
+}
+
+.nav-button:hover,
+.nav-button.active{
+  border-color:var(--line);
+  background:rgba(255,255,255,.07);
+  color:#fff;
+}
+
+.nav-button.active:before{
+  content:"";
+  position:absolute;
+  left:-1px;
+  width:2px;
+  height:20px;
+  background:#fff;
+  box-shadow:0 0 12px #fff;
+}
+
+.nav-icon{
+  display:grid;
+  place-items:center;
+  width:17px;
+  height:17px;
+  border:1px solid currentColor;
+  border-radius:50%;
+  font-size:8px;
+}
+
+.sidebar-status{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:15px 13px;
+  margin-top:auto;
+  border:1px solid var(--soft);
+  color:#888;
+  font-size:8px;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+}
+
+.status-dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 12px #fff;
+}
+
+/* MAIN */
+.main{
+  width:calc(100% - 240px);
+  min-height:100vh;
+  margin-left:240px;
+  padding:32px clamp(20px,5vw,75px) 50px;
+}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding-bottom:24px;
+  border-bottom:1px solid var(--line);
+}
+
+.breadcrumb{
+  color:#777;
+  font-size:9px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+}
+
+.breadcrumb span{
+  color:#fff;
+}
+
+.top-right{
+  display:flex;
+  align-items:center;
+  gap:24px;
+}
+
+.clock{
+  color:#777;
+  font-size:10px;
+  letter-spacing:.14em;
+}
+
+.profile{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.avatar{
+  display:grid;
+  place-items:center;
+  width:31px;
+  height:31px;
+  overflow:hidden;
+  border:1px solid #fff;
+  border-radius:50%;
+  font-size:10px;
+}
+
+.avatar img,
+.big-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.profile-name{
+  color:#aaa;
+  font-size:9px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+/* PAGE */
+.page{
+  display:none;
+  padding-top:58px;
+}
+
+.page.active{
+  display:block;
+}
+
+.heading{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:25px;
+  padding-bottom:45px;
+}
+
+.eyebrow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:18px;
+  color:#777;
+  font-size:9px;
+  letter-spacing:.24em;
+  text-transform:uppercase;
+}
+
+.eyebrow:before{
+  content:"";
+  width:27px;
+  height:1px;
+  background:#fff;
+}
+
+h1{
+  font-size:clamp(42px,6vw,84px);
+  font-weight:600;
+  letter-spacing:-.08em;
+  line-height:.9;
+}
+
+.outline{
+  color:transparent;
+  -webkit-text-stroke:1px rgba(255,255,255,.7);
+}
+
+.heading-status{
+  padding:12px 15px;
+  border:1px solid var(--line);
+  color:#aaa;
+  font-size:9px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+.card{
+  border:1px solid var(--line);
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.07),transparent 38%),
+    var(--panel);
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+  margin-bottom:14px;
+}
+
+.stat-card{
+  min-height:155px;
+  padding:22px;
+}
+
+.card-title{
+  color:#777;
+  font-size:9px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+
+.stat-value{
+  margin-top:27px;
+  font-size:25px;
+  font-weight:600;
+}
+
+.stat-sub{
+  margin-top:8px;
+  color:#777;
+  font-size:10px;
+}
+
+.main-grid{
+  display:grid;
+  grid-template-columns:1.5fr 1fr;
+  gap:14px;
+}
+
+.welcome-card,
+.session-card,
+.feature-card,
+.account-panel,
+.settings-panel{
+  padding:25px;
+}
+
+.welcome-card,
+.session-card{
+  min-height:260px;
+}
+
+.welcome-card h2{
+  margin-top:28px;
+  font-size:clamp(28px,3vw,45px);
+  line-height:1;
+}
+
+.welcome-card p{
+  max-width:500px;
+  margin-top:18px;
+  color:#888;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.session-info,
+.profile-rows{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  margin-top:25px;
+}
+
+.session-row,
+.profile-row{
+  display:flex;
+  justify-content:space-between;
+  padding-bottom:13px;
+  border-bottom:1px solid var(--soft);
+  color:#aaa;
+  font-size:10px;
+}
+
+.session-row span:first-child,
+.profile-row span:first-child{
+  color:#666;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+.feature-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+}
+
+.feature-card{
+  min-height:275px;
+}
+
+.feature-number{
+  color:#555;
+  font-size:11px;
+}
+
+.feature-card h2{
+  margin-top:48px;
+  font-size:23px;
+}
+
+.feature-card p{
+  min-height:40px;
+  margin-top:10px;
+  color:#777;
+  font-size:11px;
+  line-height:1.5;
+}
+
+.action-button,
+.save-button{
+  width:100%;
+  padding:15px;
+  border:1px solid #fff;
+  background:#fff;
+  color:#000;
+  font-size:9px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+.action-button{
+  margin-top:25px;
+}
+
+.action-button:hover,
+.save-button:hover{
+  background:#000;
+  color:#fff;
+}
+
+.log-table{
+  border:1px solid var(--line);
+  background:var(--panel);
+}
+
+.log-row{
+  display:grid;
+  grid-template-columns:100px 150px 1fr;
+  gap:20px;
+  padding:19px 20px;
+  border-bottom:1px solid var(--soft);
+  color:#aaa;
+  font-size:10px;
+}
+
+.log-row:last-child{
+  border-bottom:0;
+}
+
+.log-row span:first-child{
+  color:#555;
+}
+
+.account-panel,
+.settings-panel{
+  max-width:720px;
+}
+
+.account-header{
+  display:flex;
+  align-items:center;
+  gap:20px;
+  padding-bottom:28px;
+  border-bottom:1px solid var(--soft);
+}
+
+.big-avatar{
+  display:grid;
+  place-items:center;
+  width:76px;
+  height:76px;
+  overflow:hidden;
+  border:1px solid #fff;
+  border-radius:50%;
+  font-size:23px;
+}
+
+.account-header h2{
+  font-size:28px;
+}
+
+.account-header p{
+  margin-top:7px;
+  color:#777;
+  font-size:10px;
+}
+
+.upload-button{
+  display:inline-block;
+  padding:12px 14px;
+  margin-top:15px;
+  border:1px solid #fff;
+  background:#fff;
+  color:#000;
+  cursor:pointer;
+  font-size:9px;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+}
+
+.edit-profile{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  margin-top:28px;
+}
+
+.edit-profile input{
+  width:100%;
+  padding:14px;
+  outline:0;
+  border:1px solid var(--line);
+  background:#080808;
+  color:#fff;
+}
+
+.save-button{
+  width:auto;
+}
+
+.setting-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:20px 0;
+  border-bottom:1px solid var(--soft);
+}
+
+.setting-info h3{
+  font-size:13px;
+  font-weight:500;
+}
+
+.setting-info p{
+  margin-top:6px;
+  color:#666;
+  font-size:10px;
+}
+
+.toggle{
+  position:relative;
+  width:42px;
+  height:22px;
+  border:1px solid #fff;
+  border-radius:20px;
+  background:#fff;
+}
+
+.toggle:after{
+  content:"";
+  position:absolute;
+  top:3px;
+  right:3px;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:#000;
+}
+
+.toggle.off{
+  background:transparent;
+}
+
+.toggle.off:after{
+  right:22px;
+  background:#fff;
+}
+
+/* MODAL */
+.tool-modal{
+  position:fixed;
+  inset:0;
+  z-index:50;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(0,0,0,.84);
+  backdrop-filter:blur(14px);
+  opacity:0;
+  visibility:hidden;
+  transition:.3s;
+}
+
+.tool-modal.show{
+  opacity:1;
+  visibility:visible;
+}
+
+.tool-box{
+  position:relative;
+  width:min(470px,100%);
+  padding:42px 30px 30px;
+  border:1px solid rgba(255,255,255,.55);
+  background:#080808;
+  transform:translateY(20px) scale(.96);
+  transition:.3s;
+}
+
+.tool-modal.show .tool-box{
+  transform:translateY(0) scale(1);
+}
+
+.tool-box:before{
+  content:"ZEZO TOOLS // FAA API";
+  position:absolute;
+  top:15px;
+  left:20px;
+  color:#666;
+  font-size:8px;
+  letter-spacing:.14em;
+}
+
+.tool-close{
+  position:absolute;
+  top:12px;
+  right:16px;
+  width:28px;
+  height:28px;
+  border:1px solid var(--line);
+  border-radius:50%;
+  background:transparent;
+  color:#fff;
+  font-size:18px;
+}
+
+.tool-view{
+  text-align:center;
+}
+
+.tool-view h2{
+  margin-bottom:9px;
+  font-size:27px;
+}
+
+.tool-view p{
+  margin-bottom:22px;
+  color:#888;
+  font-size:11px;
+}
+
+.tiktok-input{
+  width:100%;
+  padding:16px;
+  outline:0;
+  border:1px solid var(--line);
+  background:#050505;
+  color:#fff;
+  font-size:11px;
+}
+
+.tiktok-download{
+  width:100%;
+  padding:16px;
+  margin-top:12px;
+  border:1px solid #fff;
+  background:#fff;
+  color:#000;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.18em;
+}
+
+.loader-circle{
+  width:54px;
+  height:54px;
+  margin:auto;
+  border:2px solid rgba(255,255,255,.15);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+.success-check,
+.failed-mark{
+  display:grid;
+  place-items:center;
+  width:62px;
+  height:62px;
+  margin:auto;
+  border:1px solid #fff;
+  border-radius:50%;
+  font-size:28px;
+}
+
+.tool-status-title{
+  margin-top:20px;
+  font-size:22px;
+}
+
+.tool-status-text{
+  margin-top:10px;
+  color:#aaa;
+  font-size:11px;
+  line-height:1.5;
+}
+
+.tool-back{
+  padding:12px 20px;
+  margin-top:22px;
+  border:1px solid var(--line);
+  background:transparent;
+  color:#aaa;
+  font-size:9px;
+  letter-spacing:.15em;
+}
+
+.toast{
+  position:fixed;
+  right:24px;
+  bottom:24px;
+  z-index:100;
+  max-width:320px;
+  padding:17px 19px;
+  border:1px solid var(--line);
+  background:#0b0b0b;
+  color:#ccc;
+  font-size:10px;
+  line-height:1.5;
+  white-space:pre-line;
+  opacity:0;
+  transform:translateY(20px);
+  transition:.3s;
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateY(0);
+}
+
+.footer{
+  display:flex;
+  justify-content:space-between;
+  margin-top:35px;
+  color:#444;
+  font-size:8px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+
+@media(max-width:900px){
+  .sidebar{
+    width:205px;
   }
 
-  const data = await response.json();
-
-  if(data.status !== true){
-    throw new Error(
-      "Faa API tidak berhasil memproses video."
-    );
+  .main{
+    width:calc(100% - 205px);
+    margin-left:205px;
   }
 
-  const videoUrl =
-    data.result?.alternatives?.hd ||
-    data.result?.alternatives?.selected ||
-    data.result?.data;
+  .main-grid,
+  .feature-grid{
+    grid-template-columns:1fr;
+  }
+}
 
-  if(!videoUrl){
-    throw new Error(
-      "URL video tidak ditemukan."
-    );
+@media(max-width:700px){
+  .sidebar{
+    top:auto;
+    right:0;
+    bottom:0;
+    left:0;
+    width:100%;
+    height:68px;
+    padding:7px 10px;
+    border-top:1px solid var(--line);
+    border-right:0;
   }
 
-  window.open(
-    videoUrl,
-    "_blank",
-    "noopener,noreferrer"
+  .logo,
+  .nav-label,
+  .sidebar-status{
+    display:none;
+  }
+
+  .nav{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    height:100%;
+  }
+
+  .nav-button{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:5px;
+    padding:4px;
+    font-size:6px;
+    text-align:center;
+  }
+
+  .main{
+    width:100%;
+    margin-left:0;
+    padding:20px 16px 100px;
+  }
+
+  .clock,
+  .profile-name{
+    display:none;
+  }
+
+  .heading{
+    display:block;
+  }
+
+  .heading-status{
+    display:inline-block;
+    margin-top:25px;
+  }
+
+  .stats{
+    grid-template-columns:1fr;
+  }
+
+  .edit-profile{
+    grid-template-columns:1fr;
+  }
+
+  .save-button{
+    width:100%;
+  }
+
+  .log-row{
+    grid-template-columns:75px 90px 1fr;
+    gap:10px;
+    font-size:8px;
+  }
+
+  .footer{
+    flex-direction:column;
+    gap:8px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">Z</div>
+
+    <div>
+      <div class="logo-name">ZeZo</div>
+      <span class="logo-beta">CORE DASHBOARD / BETA</span>
+    </div>
+  </div>
+
+  <div class="nav-label">Navigation</div>
+
+  <nav class="nav">
+    <button class="nav-button active" data-page="overview">
+      <span class="nav-icon">O</span>
+      Overview
+    </button>
+
+    <button class="nav-button" data-page="tools">
+      <span class="nav-icon">T</span>
+      Tools
+    </button>
+
+    <button class="nav-button" data-page="activity">
+      <span class="nav-icon">A</span>
+      Activity
+    </button>
+
+    <button class="nav-button" data-page="account">
+      <span class="nav-icon">U</span>
+      Account
+    </button>
+
+    <button class="nav-button" data-page="settings">
+      <span class="nav-icon">S</span>
+      Settings
+    </button>
+  </nav>
+
+  <div class="sidebar-status">
+    <span class="status-dot"></span>
+    System online
+  </div>
+</aside>
+
+<main class="main">
+
+<header class="topbar">
+  <div class="breadcrumb">
+    ZeZo Core / <span id="breadcrumbText">Overview</span>
+  </div>
+
+  <div class="top-right">
+    <div class="clock" id="clock">00:00:00 WIB</div>
+
+    <div class="profile">
+      <div class="avatar" id="topAvatar">X</div>
+      <span class="profile-name" id="topUsername">Xylon</span>
+    </div>
+  </div>
+</header>
+
+<section class="page active" data-content="overview">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">Private environment / Beta access</div>
+
+      <h1>
+        Welcome Back,<br>
+        <span class="outline">Xylon.</span>
+      </h1>
+    </div>
+
+    <div class="heading-status">SYSTEM ONLINE</div>
+  </div>
+
+  <div class="stats">
+    <div class="card stat-card">
+      <div class="card-title">System status</div>
+      <div class="stat-value">ONLINE</div>
+      <div class="stat-sub">All systems operational</div>
+    </div>
+
+    <div class="card stat-card">
+      <div class="card-title">Access level</div>
+      <div class="stat-value">BETA USER</div>
+      <div class="stat-sub">Access level locked</div>
+    </div>
+
+    <div class="card stat-card">
+      <div class="card-title">Session</div>
+      <div class="stat-value">ACTIVE</div>
+      <div class="stat-sub">Secure session verified</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="card welcome-card">
+      <div class="card-title">ZeZo Core / Environment</div>
+
+      <h2>
+        Your system<br>
+        is <span class="outline">ready.</span>
+      </h2>
+
+      <p>
+        This is the main control center of ZeZo App.
+        TikTok downloader menggunakan Faa API.
+      </p>
+    </div>
+
+    <div class="card session-card">
+      <div class="card-title">Session details</div>
+
+      <div class="session-info">
+        <div class="session-row">
+          <span>User</span>
+          <span id="overviewUser">Xylon</span>
+        </div>
+
+        <div class="session-row">
+          <span>Access</span>
+          <span>Beta access</span>
+        </div>
+
+        <div class="session-row">
+          <span>Status</span>
+          <span>Active</span>
+        </div>
+
+        <div class="session-row">
+          <span>Device</span>
+          <span id="deviceType">Detecting...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page" data-content="tools">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">Modules / Beta preview</div>
+
+      <h1>
+        ZeZo<br>
+        <span class="outline">Tools.</span>
+      </h1>
+    </div>
+
+    <div class="heading-status">FAA API</div>
+  </div>
+
+  <div class="feature-grid">
+    <div class="card feature-card">
+      <div class="feature-number">01 / 03</div>
+
+      <h2>Download TikTok</h2>
+
+      <p>
+        Download video TikTok tanpa API key.
+      </p>
+
+      <button class="action-button" id="openTiktokTool">
+        TRY
+      </button>
+    </div>
+
+    <div class="card feature-card">
+      <div class="feature-number">02 / 03</div>
+
+      <h2>Download Instagram</h2>
+
+      <p>
+        Instagram Downloader masih dipersiapkan.
+      </p>
+
+      <button
+        class="action-button"
+        data-message="Instagram Downloader masih dalam tahap pengembangan."
+      >
+        TRY
+      </button>
+    </div>
+
+    <div class="card feature-card">
+      <div class="feature-number">03 / 03</div>
+
+      <h2>Photo To HD</h2>
+
+      <p>
+        Tool Photo To HD masih dipersiapkan.
+      </p>
+
+      <button
+        class="action-button"
+        data-message="Photo To HD masih dalam tahap pengembangan."
+      >
+        TRY
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="page" data-content="activity">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">System / Activity history</div>
+
+      <h1>
+        Activity<br>
+        <span class="outline">Log.</span>
+      </h1>
+    </div>
+
+    <div class="heading-status">LIVE LOG</div>
+  </div>
+
+  <div class="log-table">
+    <div class="log-row">
+      <span>17:03:22</span>
+      <span>AUTH</span>
+      <span>Access key successfully verified</span>
+    </div>
+
+    <div class="log-row">
+      <span>17:02:15</span>
+      <span>SESSION</span>
+      <span>Secure session created</span>
+    </div>
+
+    <div class="log-row">
+      <span>17:01:48</span>
+      <span>FAA API</span>
+      <span>Faa TikTok module initialized</span>
+    </div>
+  </div>
+</section>
+
+<section class="page" data-content="account">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">Identity / User profile</div>
+
+      <h1>
+        Your<br>
+        <span class="outline">Account.</span>
+      </h1>
+    </div>
+
+    <div class="heading-status">VERIFIED USER</div>
+  </div>
+
+  <div class="card account-panel">
+    <div class="account-header">
+      <div class="big-avatar" id="profilePreview">X</div>
+
+      <div>
+        <h2 id="accountUsername">Xylon</h2>
+        <p>Beta access user</p>
+
+        <label class="upload-button">
+          Change Photo
+
+          <input
+            id="photoInput"
+            type="file"
+            accept="image/*"
+            hidden
+          >
+        </label>
+      </div>
+    </div>
+
+    <div class="profile-rows">
+      <div class="profile-row">
+        <span>Username</span>
+        <span id="accountUsernameStatus">Xylon</span>
+      </div>
+
+      <div class="profile-row">
+        <span>Access level</span>
+        <span>Beta user / Locked</span>
+      </div>
+
+      <div class="profile-row">
+        <span>Status</span>
+        <span>Active</span>
+      </div>
+    </div>
+
+    <div class="edit-profile">
+      <input id="usernameInput" value="Xylon" maxlength="20">
+
+      <button class="save-button" id="saveUsername">
+        Save Username
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="page" data-content="settings">
+  <div class="heading">
+    <div>
+      <div class="eyebrow">System / Configuration</div>
+
+      <h1>
+        System<br>
+        <span class="outline">Settings.</span>
+      </h1>
+    </div>
+
+    <div class="heading-status">CONFIGURATION</div>
+  </div>
+
+  <div class="card settings-panel">
+    <div class="setting-row">
+      <div class="setting-info">
+        <h3>System Notifications</h3>
+        <p>Show messages from beta tools</p>
+      </div>
+
+      <button class="toggle" id="notificationToggle"></button>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <span>ZeZo Core Dashboard</span>
+  <span>Beta build / Faa API</span>
+</footer>
+
+</main>
+</div>
+
+<!-- MODAL DOWNLOAD -->
+<div class="tool-modal" id="tiktokModal">
+  <div class="tool-box">
+
+    <button class="tool-close" id="closeTiktokModal">
+      ×
+    </button>
+
+    <div class="tool-view" id="tiktokInputView">
+      <h2>ZEZO TOOLS</h2>
+
+      <p>
+        Masukkan link TikTok yang ingin didownload.
+      </p>
+
+      <input
+        class="tiktok-input"
+        id="tiktokUrlInput"
+        type="url"
+        placeholder="https://www.tiktok.com/..."
+      >
+
+      <button class="tiktok-download" id="startTiktokDownload">
+        DOWNLOAD
+      </button>
+    </div>
+
+    <div class="tool-view" id="tiktokProcessView" hidden>
+      <div class="loader-circle"></div>
+
+      <div class="tool-status-title">
+        Proses Download
+      </div>
+
+      <div class="tool-status-text">
+        Sedang mengambil video dari Faa API...
+      </div>
+    </div>
+
+    <div class="tool-view" id="tiktokSuccessView" hidden>
+      <div class="success-check">✓</div>
+
+      <div class="tool-status-title">
+        Video Ditemukan
+      </div>
+
+      <div class="tool-status-text">
+        Link video sedang dibuka di tab baru.
+      </div>
+
+      <button class="tool-back" id="successBackButton">
+        KEMBALI
+      </button>
+    </div>
+
+    <div class="tool-view" id="tiktokFailedView" hidden>
+      <div class="failed-mark">×</div>
+
+      <div class="tool-status-title">
+        Download Gagal
+      </div>
+
+      <div class="tool-status-text" id="tiktokFailedText">
+        Video tidak dapat diproses.
+      </div>
+
+      <button class="tool-back" id="failedBackButton">
+        COBA LAGI
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/*
+  Faa API tidak memakai API key.
+  Endpoint mengikuti format yang kamu berikan.
+*/
+const FAA_API_URL =
+  "https://api-faa.my.id/faa/tiktok?url=";
+
+const navButtons =
+  document.querySelectorAll(".nav-button");
+
+const pages =
+  document.querySelectorAll(".page");
+
+const breadcrumbText =
+  document.getElementById("breadcrumbText");
+
+const clock =
+  document.getElementById("clock");
+
+const deviceType =
+  document.getElementById("deviceType");
+
+const toast =
+  document.getElementById("toast");
+
+const openTiktokTool =
+  document.getElementById("openTiktokTool");
+
+const closeTiktokModal =
+  document.getElementById("closeTiktokModal");
+
+const tiktokModal =
+  document.getElementById("tiktokModal");
+
+const tiktokUrlInput =
+  document.getElementById("tiktokUrlInput");
+
+const startTiktokDownload =
+  document.getElementById("startTiktokDownload");
+
+const tiktokInputView =
+  document.getElementById("tiktokInputView");
+
+const tiktokProcessView =
+  document.getElementById("tiktokProcessView");
+
+const tiktokSuccessView =
+  document.getElementById("tiktokSuccessView");
+
+const tiktokFailedView =
+  document.getElementById("tiktokFailedView");
+
+const tiktokFailedText =
+  document.getElementById("tiktokFailedText");
+
+const successBackButton =
+  document.getElementById("successBackButton");
+
+const failedBackButton =
+  document.getElementById("failedBackButton");
+
+const notificationToggle =
+  document.getElementById("notificationToggle");
+
+const usernameInput =
+  document.getElementById("usernameInput");
+
+const saveUsername =
+  document.getElementById("saveUsername");
+
+const accountUsername =
+  document.getElementById("accountUsername");
+
+const accountUsernameStatus =
+  document.getElementById("accountUsernameStatus");
+
+const overviewUser =
+  document.getElementById("overviewUser");
+
+const topUsername =
+  document.getElementById("topUsername");
+
+const photoInput =
+  document.getElementById("photoInput");
+
+const profilePreview =
+  document.getElementById("profilePreview");
+
+const topAvatar =
+  document.getElementById("topAvatar");
+
+let toastTimer;
+
+function showToast(message,force = false){
+  const enabled =
+    localStorage.getItem("zezoNotifications") !== "false";
+
+  if(!enabled && !force) return;
+
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  clearTimeout(toastTimer);
+
+  toastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  },3000);
+}
+
+/* NAVIGASI */
+navButtons.forEach(button => {
+  button.addEventListener("click",() => {
+    const pageName = button.dataset.page;
+
+    pages.forEach(page => {
+      page.classList.toggle(
+        "active",
+        page.dataset.content === pageName
+      );
+    });
+
+    navButtons.forEach(item => {
+      item.classList.toggle(
+        "active",
+        item === button
+      );
+    });
+
+    breadcrumbText.textContent =
+      pageName.charAt(0).toUpperCase() +
+      pageName.slice(1);
+  });
+});
+
+/* CLOCK */
+function updateClock(){
+  const now = new Date();
+
+  clock.textContent =
+    now.toLocaleTimeString("id-ID",{
+      hour:"2-digit",
+      minute:"2-digit",
+      second:"2-digit",
+      hour12:false,
+      timeZone:"Asia/Jakarta"
+    }) + " WIB";
+}
+
+updateClock();
+setInterval(updateClock,1000);
+
+deviceType.textContent =
+  window.matchMedia("(max-width:700px)").matches
+    ? "Mobile device"
+    : "Desktop device";
+
+/* BETA BUTTON */
+document
+  .querySelectorAll("[data-message]")
+  .forEach(button => {
+    button.addEventListener("click",() => {
+      showToast(
+        "CAUTION // BETA FEATURE\n\n" +
+        button.dataset.message
+      );
+    });
+  });
+
+/* ACCOUNT */
+const savedUsername =
+  localStorage.getItem("zezoUsername");
+
+if(savedUsername){
+  usernameInput.value = savedUsername;
+  accountUsername.textContent = savedUsername;
+  accountUsernameStatus.textContent = savedUsername;
+  overviewUser.textContent = savedUsername;
+  topUsername.textContent = savedUsername;
+}
+
+saveUsername.addEventListener("click",() => {
+  const username =
+    usernameInput.value.trim();
+
+  if(!username){
+    showToast(
+      "Username tidak boleh kosong.",
+      true
+    );
+
+    return;
+  }
+
+  localStorage.setItem(
+    "zezoUsername",
+    username
+  );
+
+  accountUsername.textContent = username;
+  accountUsernameStatus.textContent = username;
+  overviewUser.textContent = username;
+  topUsername.textContent = username;
+
+  showToast(
+    "Username berhasil diperbarui.",
+    true
+  );
+});
+
+const savedPhoto =
+  localStorage.getItem("zezoProfilePhoto");
+
+if(savedPhoto){
+  profilePreview.innerHTML =
+    `<img src="${savedPhoto}" alt="Profile">`;
+
+  topAvatar.innerHTML =
+    `<img src="${savedPhoto}" alt="Profile">`;
+}
+
+photoInput.addEventListener("change",event => {
+  const file = event.target.files[0];
+
+  if(!file) return;
+
+  if(!file.type.startsWith("image/")){
+    showToast(
+      "File harus berupa gambar.",
+      true
+    );
+
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = event => {
+    const image = event.target.result;
+
+    profilePreview.innerHTML =
+      `<img src="${image}" alt="Profile">`;
+
+    topAvatar.innerHTML =
+      `<img src="${image}" alt="Profile">`;
+
+    localStorage.setItem(
+      "zezoProfilePhoto",
+      image
+    );
+
+    showToast(
+      "Foto profil berhasil diperbarui.",
+      true
+    );
+  };
+
+  reader.readAsDataURL(file);
+});
+
+/* NOTIFICATION */
+function updateNotificationToggle(){
+  const enabled =
+    localStorage.getItem("zezoNotifications") !== "false";
+
+  notificationToggle.classList.toggle(
+    "off",
+    !enabled
   );
 }
+
+notificationToggle.addEventListener("click",() => {
+  const enabled =
+    localStorage.getItem("zezoNotifications") !== "false";
+
+  localStorage.setItem(
+    "zezoNotifications",
+    String(!enabled)
+  );
+
+  updateNotificationToggle();
+
+  showToast(
+    !enabled
+      ? "Notifications enabled"
+      : "Notifications disabled",
+    true
+  );
+});
+
+updateNotificationToggle();
+
+/* MODAL */
+function showTiktokView(view){
+  tiktokInputView.hidden =
+    view !== "input";
+
+  tiktokProcessView.hidden =
+    view !== "process";
+
+  tiktokSuccessView.hidden =
+    view !== "success";
+
+  tiktokFailedView.hidden =
+    view !== "failed";
+}
+
+function openModal(){
+  showTiktokView("input");
+  tiktokModal.classList.add("show");
+  document.body.style.overflow = "hidden";
+
+  setTimeout(() => {
+    tiktokUrlInput.focus();
+  },250);
+}
+
+function closeModal(){
+  tiktokModal.classList.remove("show");
+  document.body.style.overflow = "";
+}
+
+openTiktokTool.addEventListener(
+  "click",
+  openModal
+);
+
+closeTiktokModal.addEventListener(
+  "click",
+  closeModal
+);
+
+tiktokModal.addEventListener("click",event => {
+  if(event.target === tiktokModal){
+    closeModal();
+  }
+});
+
+document.addEventListener("keydown",event => {
+  if(
+    event.key === "Escape" &&
+    tiktokModal.classList.contains("show")
+  ){
+    closeModal();
+  }
+});
+
+successBackButton.addEventListener("click",() => {
+  showTiktokView("input");
+});
+
+failedBackButton.addEventListener("click",() => {
+  showTiktokView("input");
+  tiktokUrlInput.focus();
+});
+
+/* FAA API */
+startTiktokDownload.addEventListener("click",async() => {
+  const tiktokUrl =
+    tiktokUrlInput.value.trim();
+
+  if(!tiktokUrl){
+    showTiktokView("failed");
+
+    tiktokFailedText.textContent =
+      "Masukkan link TikTok terlebih dahulu.";
+
+    return;
+  }
+
+  if(!/^https?:\/\/(www\.)?tiktok\.com/i.test(tiktokUrl)){
+    showTiktokView("failed");
+
+    tiktokFailedText.textContent =
+      "Link harus berupa link TikTok yang valid.";
+
+    return;
+  }
+
+  showTiktokView("process");
+
+  try{
+    const endpoint =
+      FAA_API_URL +
+      encodeURIComponent(tiktokUrl);
+
+    const response =
+      await fetch(endpoint,{
+        method:"GET",
+        headers:{
+          "Accept":"application/json"
+        }
+      });
+
+    const rawText =
+      await response.text();
+
+    let data;
+
+    try{
+      data = JSON.parse(rawText);
+    }catch{
+      throw new Error(
+        "Response Faa API bukan JSON."
+      );
+    }
+
+    if(!response.ok){
+      throw new Error(
+        `Faa API error ${response.status}`
+      );
+    }
+
+    if(data.status !== true){
+      throw new Error(
+        "Faa API gagal memproses video."
+      );
+    }
+
+    /*
+      Prioritas:
+      1. Video HD
+      2. Video selected
+      3. Video utama
+      4. Video SD
+    */
+    const videoUrl =
+      data.result?.alternatives?.hd ||
+      data.result?.alternatives?.selected ||
+      data.result?.data ||
+      data.result?.alternatives?.sd;
+
+    if(!videoUrl){
+      throw new Error(
+        "URL video tidak ditemukan."
+      );
+    }
+
+    showTiktokView("success");
+
+    setTimeout(() => {
+      const link =
+        document.createElement("a");
+
+      link.href = videoUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.download = "zezo-tiktok-video.mp4";
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    },500);
+
+  }catch(error){
+    console.error("FAA API ERROR:",error);
+
+    showTiktokView("failed");
+
+    if(error instanceof TypeError){
+      tiktokFailedText.textContent =
+        "Request ditolak browser. Kemungkinan Faa API belum mengizinkan CORS.";
+    }else{
+      tiktokFailedText.textContent =
+        error.message ||
+        "Video gagal diproses.";
+    }
+  }
+});
+</script>
+
+</body>
+</html>
