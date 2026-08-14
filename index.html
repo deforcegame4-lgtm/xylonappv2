@@ -61,7 +61,7 @@ body{
 
 /* ---------- shell entrance ---------- */
 .app-shell{
-  position:relative; z-index:1; display:flex; height:100vh;
+  position:relative; z-index:1; display:flex; height:100vh; height:100dvh;
   opacity:0; filter:blur(10px); transform:scale(1.015);
   transition:opacity 1s var(--ease), filter 1s var(--ease), transform 1s var(--ease);
 }
@@ -69,7 +69,7 @@ body{
 
 /* ---------- SIDEBAR ---------- */
 .sidebar{
-  width:var(--sidebar-w); flex:0 0 auto; height:100vh;
+  width:var(--sidebar-w); flex:0 0 auto; height:100vh; height:100dvh;
   display:flex; flex-direction:column; justify-content:space-between;
   padding:26px 16px; border-right:1px solid var(--line);
   background:linear-gradient(180deg, rgba(255,255,255,.02), transparent 20%);
@@ -112,7 +112,7 @@ body{
 .version-tag:before{ content:''; width:5px; height:5px; border-radius:50%; background:#3ddc84; opacity:.0; } /* kept monochrome, unused */
 
 /* ---------- CONTENT ---------- */
-.content{ position:relative; flex:1; height:100vh; overflow:hidden; }
+.content{ position:relative; flex:1; height:100vh; height:100dvh; overflow:hidden; }
 
 .panel{
   position:absolute; inset:0; overflow-y:auto;
@@ -319,7 +319,6 @@ body{
 }
 .search-box input::placeholder{ color:var(--gray-dim); }
 .track-empty{ padding:20px 10px; color:var(--gray-dim); font-size:12px; text-align:center; }
-.yt-hidden{ position:absolute; width:2px; height:2px; opacity:0; pointer-events:none; overflow:hidden; }
 .track-row{
   position:relative; overflow:hidden; display:flex; align-items:center; gap:14px; width:100%; padding:12px 10px;
   border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--gray);
@@ -361,7 +360,7 @@ body{
   .ctrl-btn,.track-row,.progress-track{ cursor:pointer; }
   .search-box input{ cursor:text; }
 
-  .content{ order:1; height:calc(100vh - var(--bottom-h)); }
+  .content{ order:1; height:calc(100vh - var(--bottom-h)); height:calc(100dvh - var(--bottom-h)); }
   .panel{ padding:40px 20px 40px; }
   .maint-center{ min-height:calc(100vh - 220px); }
   .ov-orbit{ display:none; }
@@ -480,7 +479,7 @@ body{
     <div class="panel" data-index="2">
       <div class="ov-eyebrow">ZeZo Song</div>
       <h1 class="ov-title" style="font-size:clamp(24px,3.6vw,34px);">Now Playing</h1>
-      <p class="demo-note">Ditenagai YouTube — cari & putar lagu <strong>full durasi</strong>. Butuh API key YouTube Data v3 gratis dari Google Cloud Console, tempel di bagian atas script (cari <code>YT_API_KEY</code>).</p>
+      <p class="demo-note">Ditenagai Audius — platform musik independen, gratis, <strong>gak perlu API key</strong>, tanpa iklan, dan full durasi asli. Katalognya beda dari radio mainstream (lebih ke musisi indie/electronic/hip-hop underground), jadi gak semua lagu chart bakal ketemu di sini.</p>
 
       <div class="player-wrap">
         <div class="player-art">
@@ -533,7 +532,7 @@ body{
         </div>
         <div class="track-list" id="trackList"></div>
       </div>
-      <div id="ytPlayerContainer" class="yt-hidden"></div>
+      <audio id="audioPlayer" preload="metadata"></audio>
     </div>
 
 
@@ -698,20 +697,16 @@ function goTo(target) {
   if (target === 0) setTimeout(playReveal, 80);
 }
 
-/* ---------- ZeZo Song player (real search + full durasi via YouTube) ---------- */
-/* PENTING: tempel API key YouTube Data v3 kamu di sini (gratis dari Google Cloud Console).
-   Tanpa ini, fitur search gak akan jalan — playback tetap butuh search dulu. */
-const YT_API_KEY = 'AIzaSyABz_4AJV39OF7knnOjPtUU2lHGSfa-ZGI';
+/* ---------- ZeZo Song player (real search + full durasi via Audius API, gratis tanpa API key) ---------- */
+const AUDIUS_APP_NAME = 'ZeZoApp';
 
 let searchResults = [];
 let currentIndex = -1;
 let isPlaying = false;
 let isLooping = false;
 let searchTimer = null;
-let progressPoll = null;
-let ytPlayer = null;
-let ytReady = false;
 
+const audioPlayer = document.getElementById('audioPlayer');
 const playBtn = document.getElementById('playBtn');
 const nextBtn = document.getElementById('nextBtn');
 const prevBtn = document.getElementById('prevBtn');
@@ -733,7 +728,6 @@ function renderResults(state) {
 
   if (state === 'loading') { trackListEl.innerHTML = '<div class="track-empty">Mencari lagu...</div>'; return; }
   if (state === 'error') { trackListEl.innerHTML = '<div class="track-empty">Gagal ambil data lagu, coba lagi.</div>'; return; }
-  if (state === 'nokey') { trackListEl.innerHTML = '<div class="track-empty">API key YouTube belum dipasang — cari YT_API_KEY di script.</div>'; return; }
   if (searchResults.length === 0) { trackListEl.innerHTML = '<div class="track-empty">Ketik judul lagu atau nama artis buat mulai dengerin.</div>'; return; }
 
   searchResults.forEach((item, i) => {
@@ -741,9 +735,9 @@ function renderResults(state) {
     row.className = 'track-row' + (i === currentIndex ? ' active' : '');
     row.innerHTML =
       '<span class="track-num">' + String(i + 1).padStart(2, '0') + '</span>' +
-      '<span class="track-meta"><span class="track-name">' + item.title + '</span><span class="track-by">' + item.channel + '</span></span>' +
+      '<span class="track-meta"><span class="track-name">' + item.title + '</span><span class="track-by">' + item.artist + '</span></span>' +
       '<span class="track-eq">' + (i === currentIndex && isPlaying ? '<i></i><i></i><i></i>' : '') + '</span>' +
-      '<span class="track-dur"></span>';
+      '<span class="track-dur">' + formatTime(item.duration) + '</span>';
     row.addEventListener('click', () => selectResult(i));
     row.addEventListener('click', addRipple);
     trackListEl.appendChild(row);
@@ -751,20 +745,18 @@ function renderResults(state) {
 }
 
 async function doSearch(query) {
-  if (!YT_API_KEY || YT_API_KEY.indexOf('MASUKKAN_API_KEY') === 0) { renderResults('nokey'); return; }
   renderResults('loading');
   try {
-    const url = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=15&videoCategoryId=10&q=' + encodeURIComponent(query) + '&key=' + YT_API_KEY;
+    const url = 'https://api.audius.co/v1/tracks/search?query=' + encodeURIComponent(query) + '&app_name=' + AUDIUS_APP_NAME;
     const res = await fetch(url);
     const data = await res.json();
-    searchResults = (data.items || [])
-      .filter((it) => it.id && it.id.videoId)
-      .map((it) => ({
-        videoId: it.id.videoId,
-        title: it.snippet.title,
-        channel: it.snippet.channelTitle,
-        thumbnail: (it.snippet.thumbnails.high || it.snippet.thumbnails.medium || it.snippet.thumbnails.default).url
-      }));
+    searchResults = (data.data || []).map((t) => ({
+      id: t.id,
+      title: t.title,
+      artist: t.user && t.user.name ? t.user.name : 'Unknown',
+      duration: t.duration || 0,
+      artwork: t.artwork ? (t.artwork['480x480'] || t.artwork['150x150'] || '') : ''
+    }));
     currentIndex = -1;
     renderResults();
   } catch (err) {
@@ -783,22 +775,22 @@ function loadCurrent() {
   const item = searchResults[currentIndex];
   if (!item) return;
   document.getElementById('trackTitle').textContent = item.title;
-  document.getElementById('trackArtist').textContent = item.channel;
-  document.getElementById('timeTotal').textContent = '0:00';
-  document.getElementById('timeCurrent').textContent = '0:00';
-  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('trackArtist').textContent = item.artist;
+  document.getElementById('timeTotal').textContent = formatTime(item.duration);
 
   const artImg = document.getElementById('vinylArt');
-  if (item.thumbnail) { artImg.src = item.thumbnail; artImg.style.display = 'block'; }
+  if (item.artwork) { artImg.src = item.artwork; artImg.style.display = 'block'; }
   else { artImg.removeAttribute('src'); artImg.style.display = 'none'; }
 
+  audioPlayer.src = 'https://api.audius.co/v1/tracks/' + item.id + '/stream?app_name=' + AUDIUS_APP_NAME;
+  audioPlayer.loop = isLooping;
   renderResults();
 }
 
 function selectResult(i) {
   currentIndex = i;
   loadCurrent();
-  if (ytReady) ytPlayer.loadVideoById(searchResults[i].videoId);
+  audioPlayer.play().catch(() => {});
 }
 
 function setPlayingVisuals() {
@@ -821,72 +813,42 @@ function changeResult(dir) {
   const wasPlaying = isPlaying;
   currentIndex = (currentIndex + dir + searchResults.length) % searchResults.length;
   loadCurrent();
-  if (ytReady) {
-    ytPlayer.loadVideoById(searchResults[currentIndex].videoId);
-    if (!wasPlaying) setTimeout(() => ytPlayer.pauseVideo(), 300);
-  }
+  if (wasPlaying) audioPlayer.play().catch(() => {});
 }
 
-function startProgressPoll() {
-  clearInterval(progressPoll);
-  progressPoll = setInterval(() => {
-    if (!ytReady) return;
-    const dur = ytPlayer.getDuration() || 0;
-    const cur = ytPlayer.getCurrentTime() || 0;
-    document.getElementById('progressFill').style.width = (dur ? (cur / dur) * 100 : 0) + '%';
-    document.getElementById('timeCurrent').textContent = formatTime(cur);
-    document.getElementById('timeTotal').textContent = formatTime(dur);
-  }, 400);
-}
-function stopProgressPoll() { clearInterval(progressPoll); }
-
-/* YouTube IFrame API bootstrap */
-const ytTag = document.createElement('script');
-ytTag.src = 'https://www.youtube.com/iframe_api';
-document.head.appendChild(ytTag);
-
-window.onYouTubeIframeAPIReady = function () {
-  ytPlayer = new YT.Player('ytPlayerContainer', {
-    height: '2',
-    width: '2',
-    playerVars: { autoplay: 0, controls: 0, disablekb: 1 },
-    events: {
-      onReady: function () { ytReady = true; },
-      onStateChange: function (e) {
-        if (e.data === YT.PlayerState.PLAYING) {
-          isPlaying = true; setPlayingVisuals(); renderResults(); startProgressPoll();
-        } else if (e.data === YT.PlayerState.PAUSED) {
-          isPlaying = false; setPlayingVisuals(); renderResults(); stopProgressPoll();
-        } else if (e.data === YT.PlayerState.ENDED) {
-          stopProgressPoll();
-          if (isLooping) { ytPlayer.seekTo(0); ytPlayer.playVideo(); }
-          else { changeResult(1); }
-        }
-      }
-    }
-  });
-};
+audioPlayer.addEventListener('play', () => { isPlaying = true; setPlayingVisuals(); renderResults(); });
+audioPlayer.addEventListener('pause', () => { isPlaying = false; setPlayingVisuals(); renderResults(); });
+audioPlayer.addEventListener('timeupdate', () => {
+  const dur = audioPlayer.duration || 0;
+  const pct = dur ? (audioPlayer.currentTime / dur) * 100 : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('timeCurrent').textContent = formatTime(audioPlayer.currentTime);
+});
+audioPlayer.addEventListener('loadedmetadata', () => {
+  if (audioPlayer.duration) document.getElementById('timeTotal').textContent = formatTime(audioPlayer.duration);
+});
+audioPlayer.addEventListener('ended', () => {
+  if (!isLooping) changeResult(1);
+});
 
 playBtn.addEventListener('click', () => {
   if (currentIndex === -1) { searchInput.focus(); return; }
-  if (!ytReady) return;
-  const state = ytPlayer.getPlayerState();
-  if (state === 1) ytPlayer.pauseVideo();
-  else ytPlayer.playVideo();
+  if (audioPlayer.paused) audioPlayer.play().catch(() => {});
+  else audioPlayer.pause();
 });
 nextBtn.addEventListener('click', () => changeResult(1));
 prevBtn.addEventListener('click', () => changeResult(-1));
 loopBtn.addEventListener('click', () => {
   isLooping = !isLooping;
+  audioPlayer.loop = isLooping;
   loopBtn.classList.toggle('active', isLooping);
 });
 progressTrack.addEventListener('click', (e) => {
-  if (!ytReady) return;
-  const dur = ytPlayer.getDuration() || 0;
+  const dur = audioPlayer.duration || 0;
   if (!dur) return;
   const rect = e.currentTarget.getBoundingClientRect();
   const ratio = (e.clientX - rect.left) / rect.width;
-  ytPlayer.seekTo(Math.max(0, ratio * dur), true);
+  audioPlayer.currentTime = Math.max(0, ratio * dur);
 });
 
 renderResults();
