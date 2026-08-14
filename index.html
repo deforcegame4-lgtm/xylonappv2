@@ -479,7 +479,7 @@ body{
     <div class="panel" data-index="2">
       <div class="ov-eyebrow">ZeZo Song</div>
       <h1 class="ov-title" style="font-size:clamp(24px,3.6vw,34px);">Now Playing</h1>
-      <p class="demo-note">Demo mode — belum ada link lagu asli, kirim link mp3-nya nanti aku pasang di playlist ini.</p>
+      <p class="demo-note">Ditenagai iTunes Search API — hasil pencarian & cover asli, tapi audionya preview 30 detik (batasan resmi dari iTunes untuk pemutaran gratis tanpa lisensi penuh).</p>
 
       <div class="player-wrap">
         <div class="player-art">
@@ -532,6 +532,7 @@ body{
         </div>
         <div class="track-list" id="trackList"></div>
       </div>
+      <audio id="audioPlayer" preload="none"></audio>
     </div>
 
 
@@ -696,97 +697,111 @@ function goTo(target) {
   if (target === 0) setTimeout(playReveal, 80);
 }
 
-/* ---------- ZeZo Song player (demo mode, belum ada audio asli) ---------- */
-const tracks = [
-  { title: 'ZeZo Anthem', artist: 'Xylon', duration: 182, art: '' },
-  { title: 'Midnight Circuit', artist: 'Xylon', duration: 214, art: '' },
-  { title: 'Beta Waves', artist: 'Xylon', duration: 167, art: '' },
-  { title: 'Orbit Drift', artist: 'Xylon', duration: 196, art: '' },
-  { title: 'MainTance Blues', artist: 'Xylon', duration: 151, art: '' }
-];
-
-let trackIndex = 0;
+/* ---------- ZeZo Song player (real search via iTunes Search API) ---------- */
+let searchResults = [];
+let currentIndex = -1;
 let isPlaying = false;
 let isLooping = false;
-let elapsed = 0;
-let playTimer = null;
+let searchTimer = null;
+
+const audioPlayer = document.getElementById('audioPlayer');
+const playBtn = document.getElementById('playBtn');
+const nextBtn = document.getElementById('nextBtn');
+const prevBtn = document.getElementById('prevBtn');
+const loopBtn = document.getElementById('loopBtn');
+const progressTrack = document.getElementById('progressTrack');
+const searchInput = document.getElementById('searchInput');
+const trackListEl = document.getElementById('trackList');
 
 function formatTime(sec) {
+  if (!isFinite(sec) || sec < 0) sec = 0;
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return m + ':' + String(s).padStart(2, '0');
 }
 
-function renderPlaylist() {
-  const listEl = document.getElementById('trackList');
-  const searchEl = document.getElementById('searchInput');
-  if (!listEl) return;
-  const query = searchEl ? searchEl.value.toLowerCase().trim() : '';
-  listEl.innerHTML = '';
-  let matches = 0;
-  tracks.forEach((t, i) => {
-    if (query && !(t.title.toLowerCase().includes(query) || t.artist.toLowerCase().includes(query))) return;
-    matches++;
+function renderResults(state) {
+  if (!trackListEl) return;
+  trackListEl.innerHTML = '';
+
+  if (state === 'loading') {
+    trackListEl.innerHTML = '<div class="track-empty">Mencari lagu...</div>';
+    return;
+  }
+  if (state === 'error') {
+    trackListEl.innerHTML = '<div class="track-empty">Gagal ambil data lagu, coba lagi.</div>';
+    return;
+  }
+  if (searchResults.length === 0) {
+    trackListEl.innerHTML = '<div class="track-empty">Ketik judul lagu atau nama artis buat mulai dengerin.</div>';
+    return;
+  }
+
+  searchResults.forEach((item, i) => {
     const row = document.createElement('button');
-    row.className = 'track-row' + (i === trackIndex ? ' active' : '');
+    row.className = 'track-row' + (i === currentIndex ? ' active' : '');
     row.innerHTML =
       '<span class="track-num">' + String(i + 1).padStart(2, '0') + '</span>' +
-      '<span class="track-meta"><span class="track-name">' + t.title + '</span><span class="track-by">' + t.artist + '</span></span>' +
-      '<span class="track-eq">' + (i === trackIndex && isPlaying ? '<i></i><i></i><i></i>' : '') + '</span>' +
-      '<span class="track-dur">' + formatTime(t.duration) + '</span>';
-    row.addEventListener('click', () => selectTrack(i));
+      '<span class="track-meta"><span class="track-name">' + item.trackName + '</span><span class="track-by">' + item.artistName + '</span></span>' +
+      '<span class="track-eq">' + (i === currentIndex && isPlaying ? '<i></i><i></i><i></i>' : '') + '</span>' +
+      '<span class="track-dur">' + formatTime((item.trackTimeMillis || 30000) / 1000) + '</span>';
+    row.addEventListener('click', () => selectResult(i));
     row.addEventListener('click', addRipple);
-    listEl.appendChild(row);
+    trackListEl.appendChild(row);
   });
-  if (matches === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'track-empty';
-    empty.textContent = 'Lagu tidak ditemukan.';
-    listEl.appendChild(empty);
+}
+
+async function doSearch(query) {
+  renderResults('loading');
+  try {
+    const res = await fetch('https://itunes.apple.com/search?term=' + encodeURIComponent(query) + '&media=music&limit=15');
+    const data = await res.json();
+    searchResults = (data.results || []).filter((r) => r.previewUrl);
+    currentIndex = -1;
+    renderResults();
+  } catch (err) {
+    renderResults('error');
   }
 }
 
-function updateProgress() {
-  const pct = Math.min(elapsed / tracks[trackIndex].duration, 1) * 100;
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('timeCurrent').textContent = formatTime(elapsed);
-}
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  const q = searchInput.value.trim();
+  if (q.length < 2) {
+    searchResults = [];
+    currentIndex = -1;
+    renderResults();
+    return;
+  }
+  searchTimer = setTimeout(() => doSearch(q), 450);
+});
 
-function loadTrack(i) {
-  trackIndex = i;
-  elapsed = 0;
-  document.getElementById('trackTitle').textContent = tracks[i].title;
-  document.getElementById('trackArtist').textContent = tracks[i].artist;
-  document.getElementById('timeTotal').textContent = formatTime(tracks[i].duration);
+function loadCurrent() {
+  const item = searchResults[currentIndex];
+  if (!item) return;
+  document.getElementById('trackTitle').textContent = item.trackName;
+  document.getElementById('trackArtist').textContent = item.artistName;
+  document.getElementById('timeTotal').textContent = formatTime((item.trackTimeMillis || 30000) / 1000);
+
   const artImg = document.getElementById('vinylArt');
-  if (tracks[i].art) {
-    artImg.src = tracks[i].art;
+  const art = (item.artworkUrl100 || '').replace('100x100bb', '300x300bb');
+  if (art) {
+    artImg.src = art;
     artImg.style.display = 'block';
   } else {
     artImg.removeAttribute('src');
     artImg.style.display = 'none';
   }
-  updateProgress();
-  renderPlaylist();
+
+  audioPlayer.src = item.previewUrl;
+  audioPlayer.loop = isLooping;
+  renderResults();
 }
 
-function selectTrack(i) {
-  loadTrack(i);
-  if (!isPlaying) togglePlay();
-}
-
-function tick() {
-  elapsed += 1;
-  if (elapsed >= tracks[trackIndex].duration) {
-    if (isLooping) {
-      elapsed = 0;
-      updateProgress();
-      return;
-    }
-    changeTrack(1);
-    return;
-  }
-  updateProgress();
+function selectResult(i) {
+  currentIndex = i;
+  loadCurrent();
+  audioPlayer.play().catch(() => {});
 }
 
 function setPlayingVisuals() {
@@ -804,44 +819,55 @@ function setPlayingVisuals() {
   }
 }
 
-function togglePlay() {
-  isPlaying = !isPlaying;
-  setPlayingVisuals();
-  clearInterval(playTimer);
-  if (isPlaying) playTimer = setInterval(tick, 1000);
-  renderPlaylist();
+function changeResult(dir) {
+  if (searchResults.length === 0) return;
+  const wasPlaying = isPlaying;
+  currentIndex = (currentIndex + dir + searchResults.length) % searchResults.length;
+  loadCurrent();
+  if (wasPlaying) audioPlayer.play().catch(() => {});
 }
 
-function changeTrack(dir) {
-  loadTrack((trackIndex + dir + tracks.length) % tracks.length);
-  clearInterval(playTimer);
-  if (isPlaying) playTimer = setInterval(tick, 1000);
-}
+audioPlayer.addEventListener('play', () => { isPlaying = true; setPlayingVisuals(); renderResults(); });
+audioPlayer.addEventListener('pause', () => { isPlaying = false; setPlayingVisuals(); renderResults(); });
+audioPlayer.addEventListener('timeupdate', () => {
+  const dur = audioPlayer.duration || 0;
+  const pct = dur ? (audioPlayer.currentTime / dur) * 100 : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('timeCurrent').textContent = formatTime(audioPlayer.currentTime);
+});
+audioPlayer.addEventListener('loadedmetadata', () => {
+  document.getElementById('timeTotal').textContent = formatTime(audioPlayer.duration || 0);
+});
+audioPlayer.addEventListener('ended', () => {
+  if (!isLooping) changeResult(1);
+});
 
-const playBtn = document.getElementById('playBtn');
-const nextBtn = document.getElementById('nextBtn');
-const prevBtn = document.getElementById('prevBtn');
-const loopBtn = document.getElementById('loopBtn');
-const progressTrack = document.getElementById('progressTrack');
-const searchInput = document.getElementById('searchInput');
+playBtn.addEventListener('click', () => {
+  if (currentIndex === -1) {
+    searchInput.focus();
+    return;
+  }
+  if (audioPlayer.paused) audioPlayer.play().catch(() => {});
+  else audioPlayer.pause();
+});
+nextBtn.addEventListener('click', () => changeResult(1));
+prevBtn.addEventListener('click', () => changeResult(-1));
+loopBtn.addEventListener('click', () => {
+  isLooping = !isLooping;
+  audioPlayer.loop = isLooping;
+  loopBtn.classList.toggle('active', isLooping);
+});
+progressTrack.addEventListener('click', (e) => {
+  const dur = audioPlayer.duration || 0;
+  if (!dur) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const ratio = (e.clientX - rect.left) / rect.width;
+  audioPlayer.currentTime = Math.max(0, ratio * dur);
+});
 
-if (playBtn) {
-  playBtn.addEventListener('click', togglePlay);
-  nextBtn.addEventListener('click', () => changeTrack(1));
-  prevBtn.addEventListener('click', () => changeTrack(-1));
-  loopBtn.addEventListener('click', () => {
-    isLooping = !isLooping;
-    loopBtn.classList.toggle('active', isLooping);
-  });
-  searchInput.addEventListener('input', renderPlaylist);
-  progressTrack.addEventListener('click', (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = (e.clientX - rect.left) / rect.width;
-    elapsed = Math.max(0, Math.floor(ratio * tracks[trackIndex].duration));
-    updateProgress();
-  });
-  loadTrack(0);
-}
+renderResults();
+
+
 
 navItems.forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.index)));
 document.querySelectorAll('[data-jump]').forEach((btn) => btn.addEventListener('click', () => goTo(btn.dataset.jump)));
