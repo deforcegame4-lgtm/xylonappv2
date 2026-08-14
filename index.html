@@ -479,7 +479,7 @@ body{
     <div class="panel" data-index="2">
       <div class="ov-eyebrow">ZeZo Song</div>
       <h1 class="ov-title" style="font-size:clamp(24px,3.6vw,34px);">Now Playing</h1>
-      <p class="demo-note">Ditenagai Audius — platform musik independen, gratis, <strong>gak perlu API key</strong>, tanpa iklan, dan full durasi asli. Katalognya beda dari radio mainstream (lebih ke musisi indie/electronic/hip-hop underground), jadi gak semua lagu chart bakal ketemu di sini.</p>
+      <p class="demo-note">Ditenagai <strong>Piped</strong> — proyek open-source yang narik audio langsung dari YouTube tanpa lapisan iklan, jadi katalognya seluas YouTube (lagu mainstream ikut ada) dan full durasi. Catatan jujur: ini API pihak ketiga non-resmi yang jalan lewat instance komunitas, jadi kadang bisa lambat/nge-down — kalau gitu, coba lagi beberapa saat lagi.</p>
 
       <div class="player-wrap">
         <div class="player-art">
@@ -697,8 +697,15 @@ function goTo(target) {
   if (target === 0) setTimeout(playReveal, 80);
 }
 
-/* ---------- ZeZo Song player (real search + full durasi via Audius API, gratis tanpa API key) ---------- */
-const AUDIUS_APP_NAME = 'ZeZoApp';
+/* ---------- ZeZo Song player (real search + full durasi via Piped API, tanpa iklan) ---------- */
+/* Piped = frontend open-source untuk YouTube. Kalau instance pertama down, otomatis coba instance berikutnya.
+   Daftar lengkap & status instance: https://github.com/TeamPiped/documentation (public-instances) */
+const PIPED_INSTANCES = [
+  'https://pipedapi.kavin.rocks',
+  'https://pipedapi.adminforge.de',
+  'https://piped-api.privacy.com.de',
+  'https://api.piped.yt'
+];
 
 let searchResults = [];
 let currentIndex = -1;
@@ -722,12 +729,25 @@ function formatTime(sec) {
   return m + ':' + String(s).padStart(2, '0');
 }
 
+async function pipedFetch(path) {
+  for (const base of PIPED_INSTANCES) {
+    try {
+      const res = await fetch(base + path);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data && !data.error) return data;
+    } catch (err) { /* coba instance berikutnya */ }
+  }
+  throw new Error('Semua instance Piped gagal diakses.');
+}
+
 function renderResults(state) {
   if (!trackListEl) return;
   trackListEl.innerHTML = '';
 
   if (state === 'loading') { trackListEl.innerHTML = '<div class="track-empty">Mencari lagu...</div>'; return; }
-  if (state === 'error') { trackListEl.innerHTML = '<div class="track-empty">Gagal ambil data lagu, coba lagi.</div>'; return; }
+  if (state === 'buffering') { trackListEl.innerHTML = '<div class="track-empty">Menyiapkan audio...</div>'; return; }
+  if (state === 'error') { trackListEl.innerHTML = '<div class="track-empty">Gagal ambil data lagu — instance Piped lagi sibuk, coba lagi.</div>'; return; }
   if (searchResults.length === 0) { trackListEl.innerHTML = '<div class="track-empty">Ketik judul lagu atau nama artis buat mulai dengerin.</div>'; return; }
 
   searchResults.forEach((item, i) => {
@@ -747,16 +767,16 @@ function renderResults(state) {
 async function doSearch(query) {
   renderResults('loading');
   try {
-    const url = 'https://api.audius.co/v1/tracks/search?query=' + encodeURIComponent(query) + '&app_name=' + AUDIUS_APP_NAME;
-    const res = await fetch(url);
-    const data = await res.json();
-    searchResults = (data.data || []).map((t) => ({
-      id: t.id,
-      title: t.title,
-      artist: t.user && t.user.name ? t.user.name : 'Unknown',
-      duration: t.duration || 0,
-      artwork: t.artwork ? (t.artwork['480x480'] || t.artwork['150x150'] || '') : ''
-    }));
+    const data = await pipedFetch('/search?q=' + encodeURIComponent(query) + '&filter=music_songs');
+    searchResults = (data.items || [])
+      .filter((it) => it.url && it.url.indexOf('v=') !== -1)
+      .map((it) => ({
+        videoId: it.url.split('v=')[1].split('&')[0],
+        title: it.title,
+        artist: it.uploaderName || 'Unknown',
+        duration: it.duration || 0,
+        thumbnail: it.thumbnail || ''
+      }));
     currentIndex = -1;
     renderResults();
   } catch (err) {
@@ -779,18 +799,33 @@ function loadCurrent() {
   document.getElementById('timeTotal').textContent = formatTime(item.duration);
 
   const artImg = document.getElementById('vinylArt');
-  if (item.artwork) { artImg.src = item.artwork; artImg.style.display = 'block'; }
+  if (item.thumbnail) { artImg.src = item.thumbnail; artImg.style.display = 'block'; }
   else { artImg.removeAttribute('src'); artImg.style.display = 'none'; }
 
-  audioPlayer.src = 'https://api.audius.co/v1/tracks/' + item.id + '/stream?app_name=' + AUDIUS_APP_NAME;
-  audioPlayer.loop = isLooping;
   renderResults();
 }
 
-function selectResult(i) {
+async function resolveAndPlay() {
+  const item = searchResults[currentIndex];
+  if (!item) return;
+  renderResults('buffering');
+  try {
+    const data = await pipedFetch('/streams/' + item.videoId);
+    const streams = (data.audioStreams || []).filter((s) => s.url).sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+    if (!streams.length) { renderResults('error'); return; }
+    audioPlayer.src = streams[0].url;
+    audioPlayer.loop = isLooping;
+    await audioPlayer.play();
+    renderResults();
+  } catch (err) {
+    renderResults('error');
+  }
+}
+
+async function selectResult(i) {
   currentIndex = i;
   loadCurrent();
-  audioPlayer.play().catch(() => {});
+  await resolveAndPlay();
 }
 
 function setPlayingVisuals() {
@@ -808,12 +843,12 @@ function setPlayingVisuals() {
   }
 }
 
-function changeResult(dir) {
+async function changeResult(dir) {
   if (searchResults.length === 0) return;
   const wasPlaying = isPlaying;
   currentIndex = (currentIndex + dir + searchResults.length) % searchResults.length;
   loadCurrent();
-  if (wasPlaying) audioPlayer.play().catch(() => {});
+  if (wasPlaying) await resolveAndPlay();
 }
 
 audioPlayer.addEventListener('play', () => { isPlaying = true; setPlayingVisuals(); renderResults(); });
@@ -833,6 +868,7 @@ audioPlayer.addEventListener('ended', () => {
 
 playBtn.addEventListener('click', () => {
   if (currentIndex === -1) { searchInput.focus(); return; }
+  if (!audioPlayer.src) { resolveAndPlay(); return; }
   if (audioPlayer.paused) audioPlayer.play().catch(() => {});
   else audioPlayer.pause();
 });
