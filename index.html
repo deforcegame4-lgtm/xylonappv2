@@ -479,7 +479,7 @@ body{
     <div class="panel" data-index="2">
       <div class="ov-eyebrow">ZeZo Song</div>
       <h1 class="ov-title" style="font-size:clamp(24px,3.6vw,34px);">Now Playing</h1>
-      <p class="demo-note">Ditenagai <strong>Piped</strong> — proyek open-source yang narik audio langsung dari YouTube tanpa lapisan iklan, jadi katalognya seluas YouTube (lagu mainstream ikut ada) dan full durasi. Catatan jujur: ini API pihak ketiga non-resmi yang jalan lewat instance komunitas, jadi kadang bisa lambat/nge-down — kalau gitu, coba lagi beberapa saat lagi.</p>
+      <p class="demo-note">Ditenagai <strong>Invidious</strong> — frontend open-source buat YouTube, katalognya seluas YouTube dan full durasi tanpa iklan. Catatan jujur: YouTube lagi gencar mblokir frontend pihak ketiga kaya gini, jadi kalau tetap gagal terus, opsi paling stabil 100% adalah upload lagu sendiri (kirim link mp3, nanti aku pasang langsung).</p>
 
       <div class="player-wrap">
         <div class="player-art">
@@ -697,14 +697,15 @@ function goTo(target) {
   if (target === 0) setTimeout(playReveal, 80);
 }
 
-/* ---------- ZeZo Song player (real search + full durasi via Piped API, tanpa iklan) ---------- */
-/* Piped = frontend open-source untuk YouTube. Kalau instance pertama down, otomatis coba instance berikutnya.
-   Daftar lengkap & status instance: https://github.com/TeamPiped/documentation (public-instances) */
-const PIPED_INSTANCES = [
-  'https://pipedapi.kavin.rocks',
-  'https://pipedapi.adminforge.de',
-  'https://piped-api.privacy.com.de',
-  'https://api.piped.yt'
+/* ---------- ZeZo Song player (real search + full durasi via Invidious API, tanpa iklan) ---------- */
+/* Invidious = frontend open-source untuk YouTube. Kalau instance pertama down, otomatis coba instance berikutnya.
+   Daftar & status instance terkini: https://docs.invidious.io/instances/ */
+const INVIDIOUS_INSTANCES = [
+  'https://inv.nadeko.net',
+  'https://invidious.nerdvpn.de',
+  'https://yewtu.be',
+  'https://invidious.tiekoetter.com',
+  'https://inv.thepixora.com'
 ];
 
 let searchResults = [];
@@ -729,8 +730,8 @@ function formatTime(sec) {
   return m + ':' + String(s).padStart(2, '0');
 }
 
-async function pipedFetch(path) {
-  for (const base of PIPED_INSTANCES) {
+async function invidiousFetch(path) {
+  for (const base of INVIDIOUS_INSTANCES) {
     try {
       const res = await fetch(base + path);
       if (!res.ok) continue;
@@ -738,7 +739,7 @@ async function pipedFetch(path) {
       if (data && !data.error) return data;
     } catch (err) { /* coba instance berikutnya */ }
   }
-  throw new Error('Semua instance Piped gagal diakses.');
+  throw new Error('Semua instance Invidious gagal diakses.');
 }
 
 function renderResults(state) {
@@ -747,7 +748,7 @@ function renderResults(state) {
 
   if (state === 'loading') { trackListEl.innerHTML = '<div class="track-empty">Mencari lagu...</div>'; return; }
   if (state === 'buffering') { trackListEl.innerHTML = '<div class="track-empty">Menyiapkan audio...</div>'; return; }
-  if (state === 'error') { trackListEl.innerHTML = '<div class="track-empty">Gagal ambil data lagu — instance Piped lagi sibuk, coba lagi.</div>'; return; }
+  if (state === 'error') { trackListEl.innerHTML = '<div class="track-empty">Gagal ambil data lagu — semua instance Invidious lagi bermasalah, coba lagi nanti.</div>'; return; }
   if (searchResults.length === 0) { trackListEl.innerHTML = '<div class="track-empty">Ketik judul lagu atau nama artis buat mulai dengerin.</div>'; return; }
 
   searchResults.forEach((item, i) => {
@@ -767,16 +768,20 @@ function renderResults(state) {
 async function doSearch(query) {
   renderResults('loading');
   try {
-    const data = await pipedFetch('/search?q=' + encodeURIComponent(query) + '&filter=music_songs');
-    searchResults = (data.items || [])
-      .filter((it) => it.url && it.url.indexOf('v=') !== -1)
-      .map((it) => ({
-        videoId: it.url.split('v=')[1].split('&')[0],
-        title: it.title,
-        artist: it.uploaderName || 'Unknown',
-        duration: it.duration || 0,
-        thumbnail: it.thumbnail || ''
-      }));
+    const data = await invidiousFetch('/api/v1/search?q=' + encodeURIComponent(query) + '&type=video');
+    searchResults = (Array.isArray(data) ? data : [])
+      .filter((it) => it.videoId)
+      .map((it) => {
+        const thumbs = it.videoThumbnails || [];
+        const thumb = thumbs.find((t) => t.quality === 'high') || thumbs[thumbs.length - 1] || null;
+        return {
+          videoId: it.videoId,
+          title: it.title,
+          artist: it.author || 'Unknown',
+          duration: it.lengthSeconds || 0,
+          thumbnail: thumb ? thumb.url : ('https://i.ytimg.com/vi/' + it.videoId + '/mqdefault.jpg')
+        };
+      });
     currentIndex = -1;
     renderResults();
   } catch (err) {
@@ -810,8 +815,10 @@ async function resolveAndPlay() {
   if (!item) return;
   renderResults('buffering');
   try {
-    const data = await pipedFetch('/streams/' + item.videoId);
-    const streams = (data.audioStreams || []).filter((s) => s.url).sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+    const data = await invidiousFetch('/api/v1/videos/' + item.videoId);
+    const streams = (data.adaptiveFormats || [])
+      .filter((s) => s.url && s.type && s.type.indexOf('audio/') === 0)
+      .sort((a, b) => (parseInt(b.bitrate) || 0) - (parseInt(a.bitrate) || 0));
     if (!streams.length) { renderResults('error'); return; }
     audioPlayer.src = streams[0].url;
     audioPlayer.loop = isLooping;
@@ -888,6 +895,7 @@ progressTrack.addEventListener('click', (e) => {
 });
 
 renderResults();
+
 
 
 
