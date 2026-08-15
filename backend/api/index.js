@@ -23,18 +23,30 @@ const PIPED_INSTANCES = [
   'https://api.piped.yt'
 ];
 
-async function pipedFetch(endpointPath) {
-  for (const base of PIPED_INSTANCES) {
-    try {
-      const res = await fetch(base + endpointPath);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (data && !data.error) return data;
-    } catch (err) {
-      // coba instance berikutnya
-    }
+async function fetchWithTimeout(url, ms) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+    if (!data || data.error) throw new Error('Response error dari instance.');
+    return data;
+  } finally {
+    clearTimeout(timer);
   }
-  throw new Error('Semua instance Piped gagal diakses dari server.');
+}
+
+async function pipedFetch(endpointPath) {
+  // Coba semua instance BARENGAN (paralel), pakai yang pertama berhasil.
+  // Timeout 4 detik per instance biar gak nunggu kelamaan dan bikin
+  // seluruh function timeout di Vercel (batas ~10 detik di free tier).
+  const attempts = PIPED_INSTANCES.map((base) => fetchWithTimeout(base + endpointPath, 4000));
+  try {
+    return await Promise.any(attempts);
+  } catch (err) {
+    throw new Error('Semua instance Piped gagal diakses dari server.');
+  }
 }
 
 app.get('/api/search', async (req, res) => {
