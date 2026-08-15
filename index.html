@@ -479,7 +479,7 @@ body{
     <div class="panel" data-index="2">
       <div class="ov-eyebrow">ZeZo Song</div>
       <h1 class="ov-title" style="font-size:clamp(24px,3.6vw,34px);">Now Playing</h1>
-      <p class="demo-note">Ditenagai <strong>Invidious</strong> — frontend open-source buat YouTube, katalognya seluas YouTube dan full durasi tanpa iklan. Catatan jujur: YouTube lagi gencar mblokir frontend pihak ketiga kaya gini, jadi kalau tetap gagal terus, opsi paling stabil 100% adalah upload lagu sendiri (kirim link mp3, nanti aku pasang langsung).</p>
+      <p class="demo-note">Ditenagai <strong>backend server sendiri</strong> — katalog seluas YouTube, full durasi, tanpa iklan. Butuh backend Node.js aktif (lihat folder <code>/backend</code>), URL-nya diisi di <code>BACKEND_URL</code> pada script.</p>
 
       <div class="player-wrap">
         <div class="player-art">
@@ -697,16 +697,10 @@ function goTo(target) {
   if (target === 0) setTimeout(playReveal, 80);
 }
 
-/* ---------- ZeZo Song player (real search + full durasi via Invidious API, tanpa iklan) ---------- */
-/* Invidious = frontend open-source untuk YouTube. Kalau instance pertama down, otomatis coba instance berikutnya.
-   Daftar & status instance terkini: https://docs.invidious.io/instances/ */
-const INVIDIOUS_INSTANCES = [
-  'https://inv.nadeko.net',
-  'https://invidious.nerdvpn.de',
-  'https://yewtu.be',
-  'https://invidious.tiekoetter.com',
-  'https://inv.thepixora.com'
-];
+/* ---------- ZeZo Song player (real search + full durasi via backend server sendiri, tanpa iklan) ---------- */
+/* PENTING: ganti nilai di bawah ini dengan URL backend kamu setelah di-deploy di cPanel.
+   Contoh: 'https://api.domainkamu.com' (tanpa garis miring di akhir). */
+const BACKEND_URL = 'ISI_URL_BACKEND_KAMU_DISINI';
 
 let searchResults = [];
 let currentIndex = -1;
@@ -730,25 +724,14 @@ function formatTime(sec) {
   return m + ':' + String(s).padStart(2, '0');
 }
 
-async function invidiousFetch(path) {
-  for (const base of INVIDIOUS_INSTANCES) {
-    try {
-      const res = await fetch(base + path);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (data && !data.error) return data;
-    } catch (err) { /* coba instance berikutnya */ }
-  }
-  throw new Error('Semua instance Invidious gagal diakses.');
-}
-
 function renderResults(state) {
   if (!trackListEl) return;
   trackListEl.innerHTML = '';
 
+  if (state === 'nobackend') { trackListEl.innerHTML = '<div class="track-empty">Backend belum disambungkan — isi BACKEND_URL di script dengan URL server kamu.</div>'; return; }
   if (state === 'loading') { trackListEl.innerHTML = '<div class="track-empty">Mencari lagu...</div>'; return; }
   if (state === 'buffering') { trackListEl.innerHTML = '<div class="track-empty">Menyiapkan audio...</div>'; return; }
-  if (state === 'error') { trackListEl.innerHTML = '<div class="track-empty">Gagal ambil data lagu — semua instance Invidious lagi bermasalah, coba lagi nanti.</div>'; return; }
+  if (state === 'error') { trackListEl.innerHTML = '<div class="track-empty">Gagal ambil data lagu — cek apakah backend server-nya lagi nyala.</div>'; return; }
   if (searchResults.length === 0) { trackListEl.innerHTML = '<div class="track-empty">Ketik judul lagu atau nama artis buat mulai dengerin.</div>'; return; }
 
   searchResults.forEach((item, i) => {
@@ -766,22 +749,12 @@ function renderResults(state) {
 }
 
 async function doSearch(query) {
+  if (!BACKEND_URL || BACKEND_URL.indexOf('ISI_URL_BACKEND') === 0) { renderResults('nobackend'); return; }
   renderResults('loading');
   try {
-    const data = await invidiousFetch('/api/v1/search?q=' + encodeURIComponent(query) + '&type=video');
-    searchResults = (Array.isArray(data) ? data : [])
-      .filter((it) => it.videoId)
-      .map((it) => {
-        const thumbs = it.videoThumbnails || [];
-        const thumb = thumbs.find((t) => t.quality === 'high') || thumbs[thumbs.length - 1] || null;
-        return {
-          videoId: it.videoId,
-          title: it.title,
-          artist: it.author || 'Unknown',
-          duration: it.lengthSeconds || 0,
-          thumbnail: thumb ? thumb.url : ('https://i.ytimg.com/vi/' + it.videoId + '/mqdefault.jpg')
-        };
-      });
+    const res = await fetch(BACKEND_URL + '/api/search?q=' + encodeURIComponent(query));
+    const data = await res.json();
+    searchResults = (Array.isArray(data) ? data : []).filter((it) => it.videoId);
     currentIndex = -1;
     renderResults();
   } catch (err) {
@@ -815,12 +788,10 @@ async function resolveAndPlay() {
   if (!item) return;
   renderResults('buffering');
   try {
-    const data = await invidiousFetch('/api/v1/videos/' + item.videoId);
-    const streams = (data.adaptiveFormats || [])
-      .filter((s) => s.url && s.type && s.type.indexOf('audio/') === 0)
-      .sort((a, b) => (parseInt(b.bitrate) || 0) - (parseInt(a.bitrate) || 0));
-    if (!streams.length) { renderResults('error'); return; }
-    audioPlayer.src = streams[0].url;
+    const res = await fetch(BACKEND_URL + '/api/stream/' + item.videoId);
+    const data = await res.json();
+    if (!data.url) { renderResults('error'); return; }
+    audioPlayer.src = data.url;
     audioPlayer.loop = isLooping;
     await audioPlayer.play();
     renderResults();
@@ -895,6 +866,7 @@ progressTrack.addEventListener('click', (e) => {
 });
 
 renderResults();
+
 
 
 
