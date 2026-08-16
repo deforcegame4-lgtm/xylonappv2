@@ -11,7 +11,8 @@
 
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch');
+// Pakai fetch bawaan Node.js (Vercel jalan di Node 18+), gak perlu node-fetch lagi
+// biar gak ada risiko module gagal ke-load pas function start.
 
 const app = express();
 app.use(cors());
