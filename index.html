@@ -698,7 +698,7 @@ function goTo(target) {
 }
 
 /* ---------- ZeZo Song player (real search + full durasi via JioSaavn, tanpa iklan, tanpa backend) ---------- */
-const JIOSAAVN_API = 'https://saavn.dev/api';
+const JIOSAAVN_BASES = ['https://saavn.sumit.co/api', 'https://saavn.dev/api'];
 
 let searchResults = [];
 let currentIndex = -1;
@@ -750,11 +750,24 @@ function renderResults(state) {
   });
 }
 
+async function jiosaavnFetch(path) {
+  let lastErr;
+  for (const base of JIOSAAVN_BASES) {
+    try {
+      const res = await fetch(base + path);
+      if (!res.ok) throw new Error('Status ' + res.status);
+      return await res.json();
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('Semua sumber JioSaavn gagal diakses.');
+}
+
 async function doSearch(query) {
   renderResults('loading');
   try {
-    const res = await fetch(JIOSAAVN_API + '/search/songs?query=' + encodeURIComponent(query) + '&limit=15');
-    const json = await res.json();
+    const json = await jiosaavnFetch('/search/songs?query=' + encodeURIComponent(query) + '&limit=15');
     const items = (json && json.data && json.data.results) || [];
     searchResults = items
       .map((s) => {
