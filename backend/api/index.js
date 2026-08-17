@@ -18,10 +18,12 @@ const app = express();
 app.use(cors());
 
 const PIPED_INSTANCES = [
-  'https://pipedapi.kavin.rocks',
-  'https://pipedapi.adminforge.de',
-  'https://piped-api.privacy.com.de',
-  'https://api.piped.yt'
+  'https://pipedapi.tokhmi.xyz',
+  'https://pipedapi.moomoo.me',
+  'https://pipedapi.syncpundit.io',
+  'https://pipedapi.rivo.lol',
+  'https://pipedapi.r4fo.com',
+  'https://pipedapi.leptons.xyz'
 ];
 
 async function fetchWithTimeout(url, ms) {
