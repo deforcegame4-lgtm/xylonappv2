@@ -479,7 +479,7 @@ body{
     <div class="panel" data-index="2">
       <div class="ov-eyebrow">ZeZo Song</div>
       <h1 class="ov-title" style="font-size:clamp(24px,3.6vw,34px);">Now Playing</h1>
-      <p class="demo-note">Ditenagai <strong>JioSaavn</strong> — kualitas audio hingga 320kbps, full durasi, tanpa iklan, dan langsung jalan tanpa backend server sendiri. Katalognya kuat banget di lagu India/Bollywood, plus banyak musik internasional juga.</p>
+      <p class="demo-note">Ditenagai <strong>iTunes Search API</strong> — katalog luas & stabil, cover asli, tanpa server tambahan. Audionya preview <strong>30 detik</strong> per lagu (batasan resmi dari Apple untuk pemutaran gratis tanpa lisensi penuh).</p>
 
       <div class="player-wrap">
         <div class="player-art">
@@ -697,9 +697,7 @@ function goTo(target) {
   if (target === 0) setTimeout(playReveal, 80);
 }
 
-/* ---------- ZeZo Song player (real search + full durasi via JioSaavn, tanpa iklan, tanpa backend) ---------- */
-const JIOSAAVN_BASES = ['https://saavn.sumit.co/api', 'https://saavn.dev/api'];
-
+/* ---------- ZeZo Song player (search via iTunes Search API — stabil, preview 30 detik) ---------- */
 let searchResults = [];
 let currentIndex = -1;
 let isPlaying = false;
@@ -720,12 +718,6 @@ function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return m + ':' + String(s).padStart(2, '0');
-}
-
-function decodeHtml(str) {
-  const txt = document.createElement('textarea');
-  txt.innerHTML = str || '';
-  return txt.value;
 }
 
 function renderResults(state) {
@@ -750,43 +742,20 @@ function renderResults(state) {
   });
 }
 
-async function jiosaavnFetch(path) {
-  let lastErr;
-  for (const base of JIOSAAVN_BASES) {
-    try {
-      const res = await fetch(base + path);
-      if (!res.ok) throw new Error('Status ' + res.status);
-      return await res.json();
-    } catch (err) {
-      lastErr = err;
-    }
-  }
-  throw lastErr || new Error('Semua sumber JioSaavn gagal diakses.');
-}
-
 async function doSearch(query) {
   renderResults('loading');
   try {
-    const json = await jiosaavnFetch('/search/songs?query=' + encodeURIComponent(query) + '&limit=15');
-    const items = (json && json.data && json.data.results) || [];
-    searchResults = items
-      .map((s) => {
-        const artistName = (s.artists && s.artists.primary && s.artists.primary.length)
-          ? s.artists.primary.map((a) => a.name).join(', ')
-          : (s.primaryArtists || 'Unknown');
-        const dl = s.downloadUrl || [];
-        const bestAudio = dl.length ? dl[dl.length - 1].url : '';
-        const imgArr = s.image || [];
-        const bestImg = imgArr.length ? imgArr[imgArr.length - 1].url : '';
-        return {
-          title: decodeHtml(s.name || s.title || 'Untitled'),
-          artist: decodeHtml(artistName),
-          duration: Number(s.duration) || 0,
-          thumbnail: bestImg,
-          audioUrl: bestAudio
-        };
-      })
-      .filter((it) => it.audioUrl);
+    const res = await fetch('https://itunes.apple.com/search?term=' + encodeURIComponent(query) + '&media=music&limit=15');
+    const json = await res.json();
+    searchResults = (json.results || [])
+      .filter((t) => t.previewUrl)
+      .map((t) => ({
+        title: t.trackName,
+        artist: t.artistName,
+        duration: (t.trackTimeMillis || 30000) / 1000,
+        thumbnail: (t.artworkUrl100 || '').replace('100x100bb', '300x300bb'),
+        audioUrl: t.previewUrl
+      }));
     currentIndex = -1;
     renderResults();
   } catch (err) {
